@@ -1,0 +1,80 @@
+{
+  "app": { "name": "CAR ONE PLUS", "tagline": "Votre mobilité. Votre voiture. Votre revenu." },
+  "onboarding": {
+    "slide1Title": "Louez ce que vous voulez, quand vous voulez",
+    "slide1Body": "Voitures, motos, vélos, trottinettes, yachts, avions et jets privés — tout dans une seule app.",
+    "slide2Title": "Mettez vos biens en location",
+    "slide2Body": "Générez des revenus avec votre véhicule. Photos, documents, vérification : on vous guide pas à pas.",
+    "slide3Title": "Réservez en toute confiance",
+    "slide3Body": "Paiement sécurisé, contrat électronique, état des lieux assisté et assistance dédiée.",
+    "next": "Suivant", "skip": "Passer", "start": "Commencer"
+  },
+  "auth": {
+    "login": "Connexion", "signup": "Inscription", "email": "E-mail", "phone": "Téléphone",
+    "password": "Mot de passe", "confirm": "Confirmer", "forgotPassword": "Mot de passe oublié ?",
+    "choiceTitle": "Vous êtes...", "individual": "Particulier", "professional": "Professionnel",
+    "individualDesc": "Je loue des véhicules et/ou je mets les miens en location.",
+    "professionalDesc": "Je gère une flotte ou je loue à titre professionnel.",
+    "continueWithEmail": "Continuer avec e-mail", "noAccount": "Pas encore de compte ?",
+    "haveAccount": "Déjà un compte ?"
+  },
+  "identity": {
+    "title": "Vérification d'identité", "body": "Pour réserver ou mettre un bien en location, nous devons vérifier votre identité et votre permis.",
+    "uploadId": "Pièce d'identité", "uploadLicence": "Permis de conduire", "selfie": "Selfie de vérification",
+    "submit": "Envoyer pour vérification", "pending": "En cours de vérification", "verified": "Vérifié"
+  },
+  "home": {
+    "greeting": "Où souhaitez-vous louer un véhicule ?", "searchPlaceholder": "Destination, ville, aéroport...",
+    "popular": "Véhicules populaires", "seeAll": "Voir tout", "categories": "Catégories",
+    "trustBadges": { "insurance": "Assurance incluse", "support": "Service client 24/7", "global": "Dans le monde entier", "pricing": "Tarifs transparents" }
+  },
+  "search": {
+    "title": "Recherche", "dateStart": "Début", "dateEnd": "Fin", "filters": "Filtres", "results": "résultats",
+    "sortRelevance": "Pertinence", "sortPrice": "Prix", "sortRating": "Note", "sortDistance": "Distance"
+  },
+  "filters": {
+    "title": "Filtres", "category": "Catégorie", "price": "Prix", "transmission": "Transmission",
+    "fuel": "Carburant", "seats": "Places", "instantBooking": "Réservation instantanée",
+    "digitalKey": "Clé digitale", "delivery": "Livraison", "rating": "Note minimum",
+    "sellerType": "Type de loueur", "apply": "Appliquer", "reset": "Réinitialiser"
+  },
+  "vehicle": {
+    "perDay": "/jour", "totalFor": "au total pour", "days": "jours", "reviews": "avis",
+    "book": "Réserver", "included_km": "Km inclus", "deposit": "Dépôt de garantie",
+    "pickupDigitalKey": "Clé digitale", "pickupMeetup": "Remise en main propre", "pickupAgency": "Agence",
+    "amenities": "Équipements", "rules": "Conditions", "fuelPolicy": "Politique carburant/recharge",
+    "protection": "Protection", "owner": "Loué par", "fleetOwner": "Véhicule CAR ONE PLUS",
+    "comingSoonCategory": "Catégorie bientôt disponible dans votre pays"
+  },
+  "booking": {
+    "priceDetails": "Détail du prix", "rental": "Location", "protectionFee": "Protection",
+    "options": "Options", "delivery": "Livraison", "serviceFee": "Frais de service",
+    "total": "Total à payer", "payment": "Paiement", "confirm": "Confirmer et payer",
+    "confirmation": "Réservation confirmée", "instructions": "Instructions",
+    "checkIn": "État des lieux — départ", "checkOut": "État des lieux — retour",
+    "inProgress": "Location en cours", "assistance": "Assistance", "invoice": "Facture",
+    "review": "Laisser un avis", "cancel": "Annuler la réservation"
+  },
+  "owner": {
+    "dashboard": "Tableau de bord", "myVehicles": "Mes véhicules", "addVehicle": "Ajouter un véhicule",
+    "documents": "Documents", "photos": "Photos", "pricing": "Tarification", "calendar": "Calendrier",
+    "rules": "Règles", "accessMode": "Mode d'accès", "bookings": "Réservations", "earnings": "Revenus",
+    "payouts": "Versements", "maintenance": "Maintenance", "claims": "Sinistres", "stats": "Statistiques",
+    "publishChecklist": "Avant de publier"
+  },
+  "account": {
+    "title": "Compte", "profile": "Profil", "drivers": "Conducteurs", "documents": "Documents",
+    "payments": "Paiements", "notifications": "Notifications", "privacy": "Confidentialité",
+    "security": "Sécurité", "help": "Aide", "terms": "Conditions", "logout": "Déconnexion",
+    "switchToOwner": "Passer en mode propriétaire", "switchToRenter": "Passer en mode locataire"
+  },
+  "nav": {
+    "home": "Accueil", "search": "Rechercher", "bookings": "Réservations", "favorites": "Favoris",
+    "account": "Compte", "dashboard": "Tableau de bord", "vehicles": "Mes biens", "messages": "Messages"
+  },
+  "common": {
+    "comingSoon": "Bientôt disponible", "comingSoonBody": "Cette fonctionnalité fait partie d'une prochaine phase de la feuille de route CAR ONE PLUS.",
+    "cancel": "Annuler", "save": "Enregistrer", "next": "Suivant", "back": "Retour", "done": "Terminé",
+    "loading": "Chargement...", "seeMore": "Voir plus"
+  }
+}

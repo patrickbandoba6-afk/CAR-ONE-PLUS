@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "CAR ONE PLUS",
+    "slug": "car-one-plus",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#0A0D14",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.caroneplus.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "CAR ONE PLUS utilise votre position pour trouver les véhicules disponibles autour de vous.",
+        "NSCameraUsageDescription": "CAR ONE PLUS utilise l'appareil photo pour l'état des lieux et les documents.",
+        "NSPhotoLibraryUsageDescription": "CAR ONE PLUS accède à vos photos pour les annonces et les états des lieux."
+      }
+    },
+    "android": {
+      "package": "com.caroneplus.app",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "READ_MEDIA_IMAGES"
+      ]
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-font"
+    ]
+  }
+}

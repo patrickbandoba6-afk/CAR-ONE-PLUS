@@ -1,0 +1,80 @@
+{
+  "app": { "name": "CAR ONE PLUS", "tagline": "Your mobility. Your car. Your income." },
+  "onboarding": {
+    "slide1Title": "Rent what you want, whenever you want",
+    "slide1Body": "Cars, motorcycles, bikes, scooters, yachts, planes and private jets — all in one app.",
+    "slide2Title": "List your own vehicles",
+    "slide2Body": "Earn money with your vehicle. Photos, documents, verification: we guide you step by step.",
+    "slide3Title": "Book with confidence",
+    "slide3Body": "Secure payment, e-contract, guided check-in/out and dedicated assistance.",
+    "next": "Next", "skip": "Skip", "start": "Get started"
+  },
+  "auth": {
+    "login": "Log in", "signup": "Sign up", "email": "Email", "phone": "Phone",
+    "password": "Password", "confirm": "Confirm", "forgotPassword": "Forgot password?",
+    "choiceTitle": "You are...", "individual": "Individual", "professional": "Professional",
+    "individualDesc": "I rent vehicles and/or list my own.",
+    "professionalDesc": "I manage a fleet or rent professionally.",
+    "continueWithEmail": "Continue with email", "noAccount": "No account yet?",
+    "haveAccount": "Already have an account?"
+  },
+  "identity": {
+    "title": "Identity verification", "body": "To book or list a vehicle, we need to verify your identity and licence.",
+    "uploadId": "ID document", "uploadLicence": "Driving licence", "selfie": "Verification selfie",
+    "submit": "Submit for verification", "pending": "Verification pending", "verified": "Verified"
+  },
+  "home": {
+    "greeting": "Where would you like to rent a vehicle?", "searchPlaceholder": "Destination, city, airport...",
+    "popular": "Popular vehicles", "seeAll": "See all", "categories": "Categories",
+    "trustBadges": { "insurance": "Insurance included", "support": "24/7 support", "global": "Worldwide", "pricing": "Transparent pricing" }
+  },
+  "search": {
+    "title": "Search", "dateStart": "Start", "dateEnd": "End", "filters": "Filters", "results": "results",
+    "sortRelevance": "Relevance", "sortPrice": "Price", "sortRating": "Rating", "sortDistance": "Distance"
+  },
+  "filters": {
+    "title": "Filters", "category": "Category", "price": "Price", "transmission": "Transmission",
+    "fuel": "Fuel", "seats": "Seats", "instantBooking": "Instant booking",
+    "digitalKey": "Digital key", "delivery": "Delivery", "rating": "Minimum rating",
+    "sellerType": "Owner type", "apply": "Apply", "reset": "Reset"
+  },
+  "vehicle": {
+    "perDay": "/day", "totalFor": "total for", "days": "days", "reviews": "reviews",
+    "book": "Book", "included_km": "Included km", "deposit": "Security deposit",
+    "pickupDigitalKey": "Digital key", "pickupMeetup": "Meetup", "pickupAgency": "Agency",
+    "amenities": "Amenities", "rules": "Rules", "fuelPolicy": "Fuel/charge policy",
+    "protection": "Protection", "owner": "Listed by", "fleetOwner": "CAR ONE PLUS vehicle",
+    "comingSoonCategory": "Category coming soon in your country"
+  },
+  "booking": {
+    "priceDetails": "Price details", "rental": "Rental", "protectionFee": "Protection",
+    "options": "Options", "delivery": "Delivery", "serviceFee": "Service fee",
+    "total": "Total due", "payment": "Payment", "confirm": "Confirm and pay",
+    "confirmation": "Booking confirmed", "instructions": "Instructions",
+    "checkIn": "Check-in", "checkOut": "Check-out",
+    "inProgress": "Rental in progress", "assistance": "Assistance", "invoice": "Invoice",
+    "review": "Leave a review", "cancel": "Cancel booking"
+  },
+  "owner": {
+    "dashboard": "Dashboard", "myVehicles": "My vehicles", "addVehicle": "Add a vehicle",
+    "documents": "Documents", "photos": "Photos", "pricing": "Pricing", "calendar": "Calendar",
+    "rules": "Rules", "accessMode": "Access mode", "bookings": "Bookings", "earnings": "Earnings",
+    "payouts": "Payouts", "maintenance": "Maintenance", "claims": "Claims", "stats": "Stats",
+    "publishChecklist": "Before you publish"
+  },
+  "account": {
+    "title": "Account", "profile": "Profile", "drivers": "Drivers", "documents": "Documents",
+    "payments": "Payments", "notifications": "Notifications", "privacy": "Privacy",
+    "security": "Security", "help": "Help", "terms": "Terms", "logout": "Log out",
+    "switchToOwner": "Switch to owner mode", "switchToRenter": "Switch to renter mode"
+  },
+  "nav": {
+    "home": "Home", "search": "Search", "bookings": "Bookings", "favorites": "Favorites",
+    "account": "Account", "dashboard": "Dashboard", "vehicles": "My assets", "messages": "Messages"
+  },
+  "common": {
+    "comingSoon": "Coming soon", "comingSoonBody": "This feature is part of an upcoming phase of the CAR ONE PLUS roadmap.",
+    "cancel": "Cancel", "save": "Save", "next": "Next", "back": "Back", "done": "Done",
+    "loading": "Loading...", "seeMore": "See more"
+  }
+}
