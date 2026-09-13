@@ -32,9 +32,15 @@ create table if not exists country_configs (
 -- ============================================================
 -- 2. Utilisateurs / organisations
 -- ============================================================
+-- account_type est LA source de vérité pour la séparation des espaces
+-- Particulier / Professionnel (voir mission "séparation totale des
+-- espaces"). Exactement deux valeurs : un compte 'individual' ne peut que
+-- louer, un compte 'professional' est seul autorisé à publier des biens
+-- (vehicles/listings, voir policies plus bas). Fixé une fois à l'inscription
+-- et rendu immuable ensuite par le trigger profiles_account_type_immutable.
 create table if not exists profiles (
   id uuid primary key references auth.users(id) on delete cascade,
-  account_type text not null default 'renter' check (account_type in ('renter','owner','professional')),
+  account_type text not null default 'individual' check (account_type in ('individual','professional')),
   full_name text,
   first_name text,
   last_name text,
@@ -441,8 +447,49 @@ create index if not exists idx_messages_thread on messages(thread_id);
 create index if not exists idx_reviews_booking on reviews(booking_id);
 
 -- ============================================================
--- RLS (activée sur les tables exposées côté client ; policies de base)
+-- SÉPARATION DES ESPACES — enforcement au niveau base (RLS)
 -- ============================================================
+-- Un compte n'est jamais reçu à changer d'espace de son propre chef. Deux
+-- garde-fous complémentaires à la restriction côté navigation
+-- (AppNavigator.js) :
+--   1. account_type est immuable après création (trigger ci-dessous) ;
+--   2. les policies RLS vérifient account_type pour toute action réservée
+--      à un des deux espaces (publier un bien = professional, réserver =
+--      individual), donc même un appel API direct forgé côté client échoue.
+
+-- Fonction utilitaire : account_type de l'appelant courant. security definer
+-- pour lire `profiles` sans dépendre de la policy de select (évite toute
+-- récursion RLS) ; volatile car lue à chaque appel dans une policy.
+create or replace function public.current_account_type()
+returns text
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select account_type from profiles where id = auth.uid();
+$$;
+
+-- Immutabilité de account_type : aucune UPDATE ne peut le changer, même si
+-- une policy le permettait par erreur plus tard. C'est le garde-fou
+-- définitif de la mission "un compte = un type de compte, pour toujours".
+create or replace function public.profiles_account_type_guard()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.account_type is distinct from old.account_type then
+    raise exception 'account_type is immutable and cannot be changed after account creation';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists profiles_account_type_immutable on profiles;
+create trigger profiles_account_type_immutable
+  before update on profiles
+  for each row execute function public.profiles_account_type_guard();
+
 alter table profiles enable row level security;
 alter table vehicles enable row level security;
 alter table listings enable row level security;
@@ -451,14 +498,42 @@ alter table messages enable row level security;
 alter table message_threads enable row level security;
 alter table reviews enable row level security;
 alter table notifications enable row level security;
+alter table organizations enable row level security;
+alter table organization_members enable row level security;
 
 create policy "profiles_self" on profiles for select using (auth.uid() = id);
-create policy "profiles_self_update" on profiles for update using (auth.uid() = id);
+-- account_type est envoyé dans la ligne insérée mais ne peut plus jamais
+-- bouger ensuite (trigger ci-dessus) — l'insert reste libre sur les deux
+-- valeurs autorisées par la contrainte check de la colonne.
+create policy "profiles_self_insert" on profiles for insert with check (auth.uid() = id);
+create policy "profiles_self_update" on profiles for update using (auth.uid() = id) with check (auth.uid() = id);
 
 create policy "listings_public_read" on listings for select using (status = 'published');
-create policy "vehicles_owner_manage" on vehicles for all using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
+create policy "vehicles_public_read" on vehicles for select using (
+  owner_id = auth.uid()
+  or exists (select 1 from listings l where l.vehicle_id = vehicles.id and l.status = 'published')
+);
+-- Publier un bien (créer/modifier/supprimer une fiche véhicule) n'est
+-- possible que pour un compte account_type = 'professional' — c'est la
+-- règle centrale de la mission : "toute personne qui veut mettre son bien
+-- en location doit passer par le compte professionnel", appliquée ici
+-- indépendamment de ce que montre l'interface.
+create policy "vehicles_owner_insert" on vehicles for insert with check (
+  auth.uid() = owner_id and public.current_account_type() = 'professional'
+);
+create policy "vehicles_owner_update" on vehicles for update using (
+  auth.uid() = owner_id and public.current_account_type() = 'professional'
+) with check (
+  auth.uid() = owner_id and public.current_account_type() = 'professional'
+);
+create policy "vehicles_owner_delete" on vehicles for delete using (
+  auth.uid() = owner_id and public.current_account_type() = 'professional'
+);
 create policy "listings_owner_manage" on listings for all using (
-  exists (select 1 from vehicles v where v.id = listings.vehicle_id and v.owner_id = auth.uid())
+  exists (
+    select 1 from vehicles v where v.id = listings.vehicle_id
+    and v.owner_id = auth.uid() and public.current_account_type() = 'professional'
+  )
 );
 
 create policy "bookings_renter_read" on bookings for select using (auth.uid() = renter_id);
@@ -468,7 +543,13 @@ create policy "bookings_owner_read" on bookings for select using (
     where l.id = bookings.listing_id and v.owner_id = auth.uid()
   )
 );
-create policy "bookings_renter_insert" on bookings for insert with check (auth.uid() = renter_id);
+-- Réserver (être renter_id sur une booking) n'est possible que pour un
+-- compte account_type = 'individual' — miroir exact de la règle ci-dessus
+-- côté vehicles/listings : un compte professionnel ne loue pas via son
+-- propre compte, il gère des biens (voir mission, schéma final).
+create policy "bookings_renter_insert" on bookings for insert with check (
+  auth.uid() = renter_id and public.current_account_type() = 'individual'
+);
 
 create policy "notifications_self" on notifications for select using (auth.uid() = user_id);
 
@@ -476,6 +557,48 @@ create policy "messages_participant" on messages for select using (
   exists (
     select 1 from message_threads t join bookings b on b.id = t.booking_id
     where t.id = messages.thread_id and (b.renter_id = auth.uid())
+  )
+);
+
+-- Une organisation ne peut être créée que par un compte professionnel, et
+-- seuls ses membres (organization_members) peuvent la lire/gérer.
+create policy "organizations_professional_insert" on organizations for insert with check (
+  public.current_account_type() = 'professional'
+);
+create policy "organizations_member_read" on organizations for select using (
+  exists (select 1 from organization_members m where m.organization_id = organizations.id and m.user_id = auth.uid())
+);
+create policy "organizations_admin_update" on organizations for update using (
+  exists (
+    select 1 from organization_members m
+    where m.organization_id = organizations.id and m.user_id = auth.uid() and m.role = 'owner_admin'
+  )
+);
+
+create policy "org_members_self_read" on organization_members for select using (
+  user_id = auth.uid()
+  or exists (select 1 from organization_members m2 where m2.organization_id = organization_members.organization_id and m2.user_id = auth.uid())
+);
+-- Bootstrap : le tout premier membre d'une organisation neuve peut
+-- s'auto-insérer (obligatoire, sinon aucune organisation ne pourrait jamais
+-- avoir de premier owner_admin) ; ensuite, seul un owner_admin existant peut
+-- ajouter de nouveaux collaborateurs.
+create policy "org_members_admin_manage" on organization_members for insert with check (
+  public.current_account_type() = 'professional'
+  and (
+    (user_id = auth.uid() and not exists (
+      select 1 from organization_members m2 where m2.organization_id = organization_members.organization_id
+    ))
+    or exists (
+      select 1 from organization_members m
+      where m.organization_id = organization_members.organization_id and m.user_id = auth.uid() and m.role = 'owner_admin'
+    )
+  )
+);
+create policy "org_members_admin_delete" on organization_members for delete using (
+  exists (
+    select 1 from organization_members m
+    where m.organization_id = organization_members.organization_id and m.user_id = auth.uid() and m.role = 'owner_admin'
   )
 );
 

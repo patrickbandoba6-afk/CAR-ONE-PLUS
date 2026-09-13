@@ -9,7 +9,7 @@ const PANEL_WIDTH = 290;
 
 export default function SideMenu({ visible, onClose, navigation }) {
   const { t, i18n } = useTranslation();
-  const { user } = useAppState();
+  const { user, signOut } = useAppState();
   const isProfessional = user.accountType === 'professional';
   const translateX = useRef(new Animated.Value(-PANEL_WIDTH)).current;
 
@@ -46,6 +46,7 @@ export default function SideMenu({ visible, onClose, navigation }) {
     { icon: 'grid-outline', label: 'Tableau de bord', screen: 'ProDashboard' },
     { icon: 'car-sport-outline', label: 'Ma flotte', screen: 'Fleet' },
     { icon: 'calendar-outline', label: 'Réservations', screen: 'ProBookings' },
+    { icon: 'camera-outline', label: 'États des lieux', screen: 'Inspections' },
     { icon: 'document-text-outline', label: 'Contrats', screen: 'Contracts' },
     { icon: 'people-outline', label: 'Collaborateurs', screen: 'Collaborators' },
     { icon: 'calculator-outline', label: 'Comptabilité', screen: 'Accounting' },
@@ -105,7 +106,7 @@ export default function SideMenu({ visible, onClose, navigation }) {
               <Text style={styles.langValue}>{i18n.language === 'fr' ? 'Français' : 'English'}</Text>
             </Pressable>
 
-            <Pressable style={styles.logout} onPress={onClose}>
+            <Pressable style={styles.logout} onPress={() => { onClose(); signOut(); }}>
               <Ionicons name="log-out-outline" size={18} color={colors.red} />
               <Text style={styles.logoutText}>{t('account.logout')}</Text>
             </Pressable>

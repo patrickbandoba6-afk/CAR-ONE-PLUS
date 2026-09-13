@@ -17,7 +17,7 @@ import SignaturePad from '../../components/SignaturePad';
 // repoussé via "Plus tard").
 export default function IdentityVerificationScreen({ navigation }) {
   const { t } = useTranslation();
-  const { user, setUser, setMode, documents, addDocument, signature, setSignature } = useAppState();
+  const { user, setUser, setPendingIdentityVerification, documents, addDocument, signature, setSignature } = useAppState();
   const [draftSignature, setDraftSignature] = useState(signature || []);
   const accountType = user.accountType === 'professional' ? 'professional' : 'individual';
   const steps = KYC_STEPS[accountType];
@@ -70,7 +70,6 @@ export default function IdentityVerificationScreen({ navigation }) {
           verified: true,
         },
       }));
-      setMode('professional');
     } else {
       setUser((prev) => ({
         ...prev,
@@ -87,6 +86,7 @@ export default function IdentityVerificationScreen({ navigation }) {
         addressVerified: true,
       }));
     }
+    setPendingIdentityVerification(false);
     navigation.replace('MainTabs');
   };
 
@@ -186,7 +186,7 @@ export default function IdentityVerificationScreen({ navigation }) {
 
       <View style={styles.footer}>
         <PrimaryButton label={stepIndex === steps.length - 1 ? t('kyc.submit') : t('common.next')} onPress={goNext} disabled={!canProceed} />
-        <Pressable onPress={() => navigation.replace('MainTabs')}>
+        <Pressable onPress={() => { setPendingIdentityVerification(false); navigation.replace('MainTabs'); }}>
           <Text style={styles.skip}>{t('kyc.later')}</Text>
         </Pressable>
       </View>

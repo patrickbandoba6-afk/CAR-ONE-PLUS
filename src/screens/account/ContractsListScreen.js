@@ -23,7 +23,7 @@ export default function ContractsListScreen({ navigation }) {
   const generateTemplate = async (template) => {
     setGeneratingId(template.id);
     try {
-      await exportContractPdf(buildTemplateHtml(template));
+      await exportContractPdf(await buildTemplateHtml(template));
     } catch (e) {
       Alert.alert('Export impossible', "Le PDF n'a pas pu être généré. Réessayez.");
     } finally {

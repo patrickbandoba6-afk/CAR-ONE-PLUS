@@ -6,10 +6,11 @@ import { colors, typography, radii } from '../../theme/colors';
 import PrimaryButton from '../../components/PrimaryButton';
 import { useAppState } from '../../context/AppStateContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { fetchMyProfile } from '../../lib/api/auth';
 
 export default function LoginScreen({ navigation }) {
   const { t } = useTranslation();
-  const { setUser } = useAppState();
+  const { setUser, setAuthStatus } = useAppState();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -22,19 +23,30 @@ export default function LoginScreen({ navigation }) {
     }
     setError('');
 
-    // Authentifie réellement contre Supabase quand le backend est branché —
-    // sinon poursuit en mode démo local (voir README, isSupabaseConfigured).
+    // Authentifie réellement contre Supabase quand le backend est branché,
+    // puis relit account_type DEPUIS profiles — jamais depuis un état local —
+    // pour décider quel espace ouvrir. Sinon poursuit en mode démo local
+    // (voir README, isSupabaseConfigured).
     if (isSupabaseConfigured) {
       setSubmitting(true);
       const { data, error: signInError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-      setSubmitting(false);
       if (signInError) {
+        setSubmitting(false);
         setError(signInError.message);
         return;
       }
-      setUser((prev) => ({ ...prev, email: email.trim() }));
+      const profile = await fetchMyProfile(data?.user?.id);
+      setSubmitting(false);
+      if (!profile) {
+        setError("Profil introuvable pour ce compte. Contactez le support.");
+        return;
+      }
+      setUser((prev) => ({ ...prev, ...profile, email: data.user.email || email.trim() }));
     }
-    navigation.replace('MainTabs');
+    // Bascule le switch racine (AppNavigator.js) sur l'espace correspondant
+    // à accountType — jamais un simple navigate() vers 'MainTabs', qui
+    // n'existe désormais que dans l'arborescence propre à chaque espace.
+    setAuthStatus('signedIn');
   };
 
   return (

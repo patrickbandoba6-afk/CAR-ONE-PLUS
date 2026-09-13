@@ -6,13 +6,16 @@ import { colors, typography, radii } from '../../theme/colors';
 import PrimaryButton from '../../components/PrimaryButton';
 import { useAppState } from '../../context/AppStateContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { createMyProfile } from '../../lib/api/auth';
 
 // accountType ('individual' | 'professional') vient du choix fait sur
-// AccountTypeScreen — il fixe le parcours KYC/KYB suivant (KycScreen) et
-// le menu/tabs affichés une fois connecté (voir SideMenu.js, AppNavigator.js).
+// AccountTypeScreen — il est écrit UNE SEULE FOIS dans profiles.account_type
+// et devient définitif (voir lib/api/auth.js, supabase/schema.sql). C'est lui
+// qui détermine, dans AppNavigator.js, quelle arborescence de navigation
+// (Particulier ou Professionnel) est montée — il n'existe plus de bascule.
 export default function SignupScreen({ navigation, route }) {
   const { t } = useTranslation();
-  const { setUser, setMode } = useAppState();
+  const { setUser, setAuthStatus, setPendingIdentityVerification } = useAppState();
   const accountType = route.params?.accountType === 'professional' ? 'professional' : 'individual';
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -28,21 +31,37 @@ export default function SignupScreen({ navigation, route }) {
     setError('');
     setSubmitting(true);
 
-    // Crée un vrai compte Supabase Auth quand le backend est branché — sinon
-    // reste en mode démo local (voir README, isSupabaseConfigured).
+    // Crée un vrai compte Supabase Auth quand le backend est branché, puis
+    // écrit immédiatement account_type dans profiles — c'est cette ligne en
+    // base, pas un état écran, qui décide définitivement de l'espace de ce
+    // compte (voir lib/api/auth.js, supabase/schema.sql). Sinon reste en
+    // mode démo local (voir README, isSupabaseConfigured).
     if (isSupabaseConfigured) {
-      const { error: signUpError } = await supabase.auth.signUp({ email: email.trim(), password });
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email: email.trim(), password });
       if (signUpError) {
         setSubmitting(false);
         setError(signUpError.message);
         return;
       }
+      const userId = signUpData?.user?.id;
+      if (userId) {
+        try {
+          await createMyProfile({ id: userId, email: email.trim(), accountType, fullName: fullName.trim() });
+        } catch (profileError) {
+          setSubmitting(false);
+          setError(profileError.message || 'Impossible de créer le profil.');
+          return;
+        }
+      }
     }
 
     setUser((prev) => ({ ...prev, fullName: fullName.trim(), email: email.trim(), accountType }));
-    if (accountType === 'professional') setMode('professional');
+    setPendingIdentityVerification(true);
     setSubmitting(false);
-    navigation.navigate('IdentityVerification');
+    // Bascule immédiatement le switch racine (AppNavigator.js) sur l'espace
+    // correspondant à accountType — Particulier ou Professionnel, jamais un
+    // choix libre. L'écran KYC/KYB s'affiche comme premier écran de cet espace.
+    setAuthStatus('signedIn');
   };
 
   return (

@@ -1,11 +1,38 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { Asset } from 'expo-asset';
+import * as FileSystem from 'expo-file-system';
 import { LEGAL_ENTITY } from '../data/legalEntity';
 import { formatMoney, formatDateTime } from '../utils/format';
 
+// Logo réel de la société encodé en data URI — c'est le seul moyen fiable
+// d'intégrer une image dans un PDF expo-print sur toutes les plateformes
+// (un chemin file:// local n'est pas garanti accessible au moteur de rendu).
+// Calculé une seule fois puis mis en cache pour les exports suivants.
+let cachedLogoDataUri = null;
+async function getLogoDataUri() {
+  if (cachedLogoDataUri) return cachedLogoDataUri;
+  try {
+    const asset = Asset.fromModule(require('../assets/logo-car-one-plus.png'));
+    await asset.downloadAsync();
+    const base64 = await FileSystem.readAsStringAsync(asset.localUri || asset.uri, { encoding: FileSystem.EncodingType.Base64 });
+    cachedLogoDataUri = `data:image/png;base64,${base64}`;
+  } catch (e) {
+    cachedLogoDataUri = null;
+  }
+  return cachedLogoDataUri;
+}
+
 // Génère le HTML imprimable d'un chemin de signature (tableau de "M x,y L x,y ...")
 // capturé par SignaturePad — rendu en SVG inline, compatible expo-print.
-function signatureSvg(strokes) {
+function signatureSvg(strokes, documentUri) {
+  if (documentUri) {
+    // Document signé importé en dehors de l'app (photo/scan) plutôt que
+    // tracé au doigt — la preuve réelle reste consultable dans l'app
+    // (ContractScreen.js) ; le PDF ne peut pas toujours embarquer un
+    // fichier local (uri file://) de façon fiable sur toutes plateformes.
+    return '<div class="sig-uploaded">✓ Document signé fourni en pièce jointe dans l\'application</div>';
+  }
   if (!strokes?.length) {
     return '<div class="sig-empty">Non signé</div>';
   }
@@ -32,10 +59,22 @@ const BASE_STYLE = `
   .sig-box { flex: 1; border: 1px solid #ddd; border-radius: 8px; padding: 12px; }
   .sig-name { font-weight: 700; font-size: 13px; }
   .sig-empty { color: #bbb; font-size: 12px; height: 90px; display: flex; align-items: center; justify-content: center; border: 1px dashed #ccc; border-radius: 6px; }
+  .sig-uploaded { color: #2e7d32; font-size: 12px; height: 90px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 0 8px; border: 1px solid #c8e6c9; border-radius: 6px; background: #f1f8f2; }
   .footer { margin-top: 30px; font-size: 10px; color: #999; }
+  .letterhead { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+  .letterhead img { width: 56px; height: 56px; object-fit: contain; }
+  .letterhead h1 { margin: 0; }
 `;
 
-export function buildContractHtml(contract) {
+// Le logo apparaît sur chaque contrat généré — pas seulement à l'écran, mais
+// aussi dans le PDF exporté/partagé, qui est le document qui a réellement
+// une valeur juridique une fois hors de l'application.
+function letterheadHtml(logoDataUri, title) {
+  const logo = logoDataUri ? `<img src="${logoDataUri}" alt="${LEGAL_ENTITY.brandName}" />` : '';
+  return `<div class="letterhead">${logo}<h1>${LEGAL_ENTITY.brandName} — ${title}</h1></div>`;
+}
+
+export async function buildContractHtml(contract) {
   const rows = [
     ['Locataire', contract.renterName],
     ['Propriétaire', contract.ownerName],
@@ -45,26 +84,28 @@ export function buildContractHtml(contract) {
   if (contract.deliveryAddress) rows.push(['Livraison', contract.deliveryAddress]);
 
   const ownerDocs = (contract.requiredOwnerDocs || []).map((d) => `<li>${d}</li>`).join('');
+  const logoDataUri = await getLogoDataUri();
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${BASE_STYLE}</style></head><body>
-    <h1>${LEGAL_ENTITY.brandName} — Contrat de location</h1>
+    ${letterheadHtml(logoDataUri, 'Contrat de location')}
     <div class="legal">${LEGAL_ENTITY.legalMention}</div>
     <div class="ref">Contrat n° ${contract.id.toUpperCase()} — édité le ${formatDateTime(new Date().toISOString())}</div>
     <table>${rows.map(([l, v]) => `<tr><td class="label">${l}</td><td class="value">${v}</td></tr>`).join('')}</table>
     ${ownerDocs ? `<h2>Documents requis pour ce bien</h2><ul class="docs">${ownerDocs}</ul>` : ''}
     <h2>Signatures</h2>
     <div class="sig-row">
-      <div class="sig-box"><div class="sig-name">${contract.renterName} (locataire)</div>${signatureSvg(contract.renterSignature)}<div>${contract.renterSignedAt ? 'Signé le ' + formatDateTime(contract.renterSignedAt) : 'Non signé'}</div></div>
-      <div class="sig-box"><div class="sig-name">${contract.ownerName} (propriétaire)</div>${signatureSvg(contract.ownerSignature)}<div>${contract.ownerSignedAt ? 'Signé le ' + formatDateTime(contract.ownerSignedAt) : 'Non signé'}</div></div>
+      <div class="sig-box"><div class="sig-name">${contract.renterName} (locataire)</div>${signatureSvg(contract.renterSignature, contract.renterDocumentUri)}<div>${contract.renterSignedAt ? 'Signé le ' + formatDateTime(contract.renterSignedAt) : 'Non signé'}</div></div>
+      <div class="sig-box"><div class="sig-name">${contract.ownerName} (propriétaire)</div>${signatureSvg(contract.ownerSignature, contract.ownerDocumentUri)}<div>${contract.ownerSignedAt ? 'Signé le ' + formatDateTime(contract.ownerSignedAt) : 'Non signé'}</div></div>
     </div>
     <div class="footer">Document généré automatiquement par l'application ${LEGAL_ENTITY.brandName} — ${LEGAL_ENTITY.legalMention}.</div>
   </body></html>`;
 }
 
 // Modèle vierge (aperçu) — pour le menu de documents avant toute réservation.
-export function buildTemplateHtml(template) {
+export async function buildTemplateHtml(template) {
+  const logoDataUri = await getLogoDataUri();
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${BASE_STYLE}</style></head><body>
-    <h1>${LEGAL_ENTITY.brandName} — ${template.title}</h1>
+    ${letterheadHtml(logoDataUri, template.title)}
     <div class="legal">${LEGAL_ENTITY.legalMention}</div>
     <div class="ref">Modèle — à titre indicatif, complété automatiquement à chaque réservation réelle.</div>
     <h2>Objet</h2>

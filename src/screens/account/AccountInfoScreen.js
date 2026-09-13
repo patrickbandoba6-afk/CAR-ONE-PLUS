@@ -223,13 +223,16 @@ function NotificationsSection() {
 
 // ---- Confidentialité --------------------------------------------------------
 function PrivacySection({ navigation }) {
-  const { user, documents, drivers, paymentMethods, resetDemoState } = useAppState();
+  const { user, documents, drivers, paymentMethods, signOut } = useAppState();
   const [showData, setShowData] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  // signOut() invalide la session et réinitialise l'état — le switch racine
+  // (AppNavigator.js) bascule automatiquement vers l'espace Auth ; aucun
+  // navigate() manuel n'est nécessaire (et le stack courant est de toute
+  // façon démonté dans la foulée).
   const deleteAccount = () => {
-    resetDemoState();
-    navigation.getParent()?.navigate?.('Onboarding') ?? navigation.navigate('Onboarding');
+    signOut();
   };
 
   return (

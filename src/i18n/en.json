@@ -82,8 +82,7 @@
   "account": {
     "title": "Account", "profile": "Profile", "drivers": "Drivers", "documents": "Documents",
     "payments": "Payments", "notifications": "Notifications", "privacy": "Privacy",
-    "security": "Security", "help": "Help", "terms": "Terms", "logout": "Log out",
-    "switchToOwner": "Switch to owner mode", "switchToRenter": "Switch to renter mode"
+    "security": "Security", "help": "Help", "terms": "Terms", "logout": "Log out"
   },
   "nav": {
     "home": "Home", "search": "Search", "bookings": "Bookings", "favorites": "Favorites",

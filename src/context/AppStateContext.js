@@ -1,12 +1,28 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { DEMO_USER, DEMO_BOOKINGS } from '../data/demoUser';
 import { DEMO_BOOKING_REQUESTS } from '../data/bookingRequests';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { fetchMyProfile, signOutRemote } from '../lib/api/auth';
 
 const AppStateContext = createContext(null);
 
 export function AppStateProvider({ children }) {
   const [user, setUser] = useState(DEMO_USER);
-  const [mode, setMode] = useState('renter'); // renter | owner | professional
+  // authStatus est la SEULE source de vérité pour "l'utilisateur est-il
+  // connecté" — dérivé de la session Supabase réelle (ou de l'état démo
+  // local si Supabase n'est pas configuré), jamais d'un simple flag écran.
+  // accountType ('individual' | 'professional') est dérivé de user.accountType,
+  // lui-même fixé UNE SEULE FOIS à l'inscription et jamais modifiable ensuite
+  // depuis l'app (voir SignupScreen.js, IdentityVerificationScreen.js).
+  // C'est cette paire qui décide, dans AppNavigator.js, laquelle des trois
+  // arborescences de navigation (Auth / Particulier / Professionnel) est
+  // montée — les deux espaces ne partagent donc plus aucune route active.
+  const [authStatus, setAuthStatus] = useState('loading'); // loading | signedOut | signedIn
+  // true juste après une inscription tant que le KYC/KYB n'a pas été complété
+  // ou explicitement repoussé — pilote l'écran de démarrage de l'espace
+  // fraîchement monté (voir AppNavigator.js).
+  const [pendingIdentityVerification, setPendingIdentityVerification] = useState(false);
+  const accountType = user?.accountType === 'professional' ? 'professional' : 'individual';
   const [favorites, setFavorites] = useState([]);
   const [bookings, setBookings] = useState(DEMO_BOOKINGS);
   const [searchFilters, setSearchFilters] = useState({
@@ -52,6 +68,48 @@ export function AppStateProvider({ children }) {
   // CheckInOutScreen.js, miroir de la table `inspections` du schéma Supabase).
   const [inspections, setInspections] = useState([]);
 
+  // Restauration de session au démarrage — c'est le SEUL endroit qui décide
+  // "l'utilisateur est connecté" et "avec quel type de compte". En mode
+  // Supabase réel, account_type vient de la table `profiles` (jamais d'un
+  // état client) ; sans Supabase configuré, l'app reste en mode démo local
+  // et démarre déconnectée (écran de connexion/inscription).
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      if (!isSupabaseConfigured) {
+        if (active) setAuthStatus('signedOut');
+        return;
+      }
+      const { data } = await supabase.auth.getSession();
+      const session = data?.session;
+      if (!session) {
+        if (active) setAuthStatus('signedOut');
+        return;
+      }
+      const profile = await fetchMyProfile(session.user.id);
+      if (!active) return;
+      if (profile) {
+        setUser((prev) => ({ ...prev, ...profile, email: session.user.email || profile.email }));
+        setAuthStatus('signedIn');
+      } else {
+        // Session Supabase valide mais aucun profil applicatif (cas limite,
+        // ex. inscription interrompue avant écriture de `profiles`) — on ne
+        // laisse jamais entrer dans un espace sans account_type confirmé.
+        setAuthStatus('signedOut');
+      }
+    })();
+    return () => { active = false; };
+  }, []);
+
+  // Déconnexion réelle — invalide la session Supabase (si configurée) puis
+  // réinitialise tout l'état local. C'est le seul chemin légitime pour
+  // changer d'espace (voir mission "séparation des espaces", §9) : il n'y a
+  // aucune bascule directe particulier <-> professionnel dans l'app.
+  const signOut = async () => {
+    if (isSupabaseConfigured) await signOutRemote();
+    resetDemoState();
+  };
+
   const toggleFavorite = (vehicleId) => {
     setFavorites((prev) => (prev.includes(vehicleId) ? prev.filter((id) => id !== vehicleId) : [...prev, vehicleId]));
   };
@@ -73,12 +131,33 @@ export function AppStateProvider({ children }) {
     setContracts((prev) => [{ id, ...contract }, ...prev]);
     return id;
   };
-  const signContract = (id, role) => setContracts((prev) => prev.map((c) => {
+  // strokes : signature tracée à l'instant, sur CE contrat précis (voir le
+  // modal de signature dans ContractScreen.js) — ne réutilise plus jamais
+  // silencieusement l'ancienne signature enregistrée au KYC ; si absente,
+  // on retombe sur `signature` (compat écrans existants).
+  const signContract = (id, role, strokes) => setContracts((prev) => prev.map((c) => {
     if (c.id !== id) return c;
     const next = {
       ...c,
       [`${role}SignedAt`]: new Date().toISOString(),
-      [`${role}Signature`]: signature,
+      [`${role}Signature`]: strokes && strokes.length > 0 ? strokes : signature,
+      [`${role}DocumentUri`]: null,
+    };
+    next.status = next.renterSignedAt && next.ownerSignedAt ? 'completed' : role === 'renter' ? 'pending_owner' : 'pending_renter';
+    return next;
+  }));
+
+  // Alternative à la signature manuscrite : le client télécharge le contrat,
+  // le signe en dehors de l'app (papier + photo, ou une appli tierce), puis
+  // rajoute directement ce document signé ici — il reste attaché au contrat,
+  // consultable à tout moment depuis l'application (voir ContractScreen.js).
+  const attachContractDocument = (id, role, uri) => setContracts((prev) => prev.map((c) => {
+    if (c.id !== id) return c;
+    const next = {
+      ...c,
+      [`${role}SignedAt`]: new Date().toISOString(),
+      [`${role}DocumentUri`]: uri,
+      [`${role}Signature`]: null,
     };
     next.status = next.renterSignedAt && next.ownerSignedAt ? 'completed' : role === 'renter' ? 'pending_owner' : 'pending_renter';
     return next;
@@ -125,10 +204,14 @@ export function AppStateProvider({ children }) {
     return id;
   };
 
-  // Réinitialise l'état démo local (déconnexion / suppression de compte) —
-  // aucune donnée serveur réelle n'existe encore (mode démo tant que Supabase
-  // n'est pas configuré), donc "supprimer mon compte" ne peut agir que sur cet état local.
+  // Réinitialise l'état local (déconnexion / suppression de compte). Remet
+  // aussi `user` et `authStatus` à zéro : après une déconnexion, plus aucune
+  // trace du compte précédent (type inclus) ne doit subsister — voir mission
+  // "séparation des espaces" §9 (changer d'espace exige un nouveau compte).
   const resetDemoState = () => {
+    setUser(DEMO_USER);
+    setAuthStatus('signedOut');
+    setPendingIdentityVerification(false);
     setFavorites([]);
     setBookings(DEMO_BOOKINGS);
     setBookingDraft(null);
@@ -146,11 +229,12 @@ export function AppStateProvider({ children }) {
     setCollaborators([]);
     setClaims([]);
     setInspections([]);
-    setMode('renter');
   };
 
   const value = useMemo(() => ({
-    user, setUser, mode, setMode,
+    user, setUser,
+    authStatus, setAuthStatus, accountType, signOut,
+    pendingIdentityVerification, setPendingIdentityVerification,
     favorites, toggleFavorite,
     bookings, setBookings,
     searchFilters, setSearchFilters,
@@ -163,7 +247,7 @@ export function AppStateProvider({ children }) {
     twoFactorEnabled, setTwoFactorEnabled,
     loyaltyPoints, addLoyaltyPoints,
     signature, setSignature,
-    contracts, createContract, signContract,
+    contracts, createContract, signContract, attachContractDocument,
     myListings, addListing, updateListing, removeListing,
     bookingRequests, respondToBookingRequest,
     collaborators, addCollaborator, removeCollaborator,
@@ -171,7 +255,7 @@ export function AppStateProvider({ children }) {
     inspections, addInspection,
     sessionStartedAt,
     resetDemoState,
-  }), [user, mode, favorites, bookings, searchFilters, bookingDraft, listingDraft, documents, drivers, paymentMethods, notificationPrefs, twoFactorEnabled, loyaltyPoints, signature, contracts, myListings, bookingRequests, collaborators, claims, inspections, sessionStartedAt]);
+  }), [user, authStatus, accountType, pendingIdentityVerification, favorites, bookings, searchFilters, bookingDraft, listingDraft, documents, drivers, paymentMethods, notificationPrefs, twoFactorEnabled, loyaltyPoints, signature, contracts, myListings, bookingRequests, collaborators, claims, inspections, sessionStartedAt]);
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
 }

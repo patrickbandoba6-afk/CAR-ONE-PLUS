@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView, Image, StyleSheet, Alert } from 'react-native';
+import { View, Text, Pressable, ScrollView, Image, Modal, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -8,9 +8,10 @@ import { useAppState } from '../../context/AppStateContext';
 import { formatMoney, formatDateTime } from '../../utils/format';
 import { LEGAL_ENTITY } from '../../data/legalEntity';
 import { KYC_DOCUMENT_LABEL_KEYS } from '../../data/kycRequirements';
-import { SignaturePreview } from '../../components/SignaturePad';
+import SignaturePad, { SignaturePreview } from '../../components/SignaturePad';
 import PrimaryButton from '../../components/PrimaryButton';
 import { buildContractHtml, exportContractPdf } from '../../lib/contractPdf';
+import { pickImage } from '../../utils/pickImage';
 
 const STATUS_LABEL = {
   pending_renter: 'En attente de signature — locataire',
@@ -20,10 +21,16 @@ const STATUS_LABEL = {
 
 export default function ContractScreen({ navigation, route }) {
   const { t } = useTranslation();
-  const { contracts, signContract, signature } = useAppState();
+  const { contracts, signContract, attachContractDocument } = useAppState();
   const contract = contracts.find((c) => c.id === route.params.contractId);
   const docLabel = (key) => t(`kyc.${KYC_DOCUMENT_LABEL_KEYS[key]}`);
   const [exporting, setExporting] = useState(false);
+  // Rôle en cours de signature (ouvre le modal ci-dessous) — la signature
+  // est tracée à l'instant, sur ce contrat précis, jamais réutilisée
+  // silencieusement depuis une signature enregistrée ailleurs.
+  const [signingRole, setSigningRole] = useState(null);
+  const [draftStrokes, setDraftStrokes] = useState([]);
+  const [importingRole, setImportingRole] = useState(null);
 
   if (!contract) {
     return (
@@ -33,18 +40,27 @@ export default function ContractScreen({ navigation, route }) {
     );
   }
 
-  const sign = (role) => {
-    if (!signature) {
-      navigation.navigate('IdentityVerification');
-      return;
+  const openSigning = (role) => { setDraftStrokes([]); setSigningRole(role); };
+  const confirmSigning = () => {
+    signContract(contract.id, signingRole, draftStrokes);
+    setSigningRole(null);
+    setDraftStrokes([]);
+  };
+
+  const importDocument = async (role) => {
+    setImportingRole(role);
+    try {
+      const uri = await pickImage();
+      if (uri) attachContractDocument(contract.id, role, uri);
+    } finally {
+      setImportingRole(null);
     }
-    signContract(contract.id, role);
   };
 
   const exportPdf = async () => {
     setExporting(true);
     try {
-      await exportContractPdf(buildContractHtml(contract));
+      await exportContractPdf(await buildContractHtml(contract));
     } catch (e) {
       Alert.alert('Export impossible', "Le PDF n'a pas pu être généré. Réessayez.");
     } finally {
@@ -110,19 +126,42 @@ export default function ContractScreen({ navigation, route }) {
             name={contract.renterName}
             signedAt={contract.renterSignedAt}
             signatureData={contract.renterSignature}
-            onSign={() => sign('renter')}
+            documentUri={contract.renterDocumentUri}
+            importing={importingRole === 'renter'}
+            onSign={() => openSigning('renter')}
+            onImport={() => importDocument('renter')}
           />
           <SignatureBlock
             label="Propriétaire"
             name={contract.ownerName}
             signedAt={contract.ownerSignedAt}
             signatureData={contract.ownerSignature}
-            onSign={() => sign('owner')}
+            documentUri={contract.ownerDocumentUri}
+            importing={importingRole === 'owner'}
+            onSign={() => openSigning('owner')}
+            onImport={() => importDocument('owner')}
           />
         </View>
 
+        <Text style={styles.pdfHint}>Le PDF ci-dessous reflète l'état actuel du contrat — vous pouvez aussi le télécharger vierge, le signer en dehors de l'application, puis rajouter le document signé ci-dessus.</Text>
         <PrimaryButton label="Télécharger le PDF" variant="outline" onPress={exportPdf} loading={exporting} />
       </ScrollView>
+
+      <Modal visible={signingRole != null} transparent animationType="fade" onRequestClose={() => setSigningRole(null)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Signature — {signingRole === 'renter' ? 'Locataire' : 'Propriétaire'}</Text>
+            <Text style={styles.modalHint}>Signez avec le doigt directement ci-dessous. Cette signature est appliquée immédiatement à ce contrat.</Text>
+            <SignaturePad value={draftStrokes} onChange={setDraftStrokes} height={180} />
+            <View style={styles.modalActions}>
+              <Pressable style={styles.modalCancel} onPress={() => setSigningRole(null)}>
+                <Text style={styles.modalCancelText}>Annuler</Text>
+              </Pressable>
+              <PrimaryButton label="Valider la signature" onPress={confirmSigning} disabled={draftStrokes.length === 0} style={{ flex: 1 }} />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -136,18 +175,28 @@ function SummaryRow({ label, value, bold }) {
   );
 }
 
-function SignatureBlock({ label, name, signedAt, signatureData, onSign }) {
+function SignatureBlock({ label, name, signedAt, signatureData, documentUri, importing, onSign, onImport }) {
   return (
     <View style={styles.signatureCard}>
       <Text style={styles.signatureLabel}>{label}</Text>
       <Text style={styles.signatureName}>{name}</Text>
       {signedAt ? (
         <>
-          <SignaturePreview value={signatureData} height={56} />
+          {documentUri ? (
+            <Image source={{ uri: documentUri }} style={styles.docPreview} resizeMode="cover" />
+          ) : (
+            <SignaturePreview value={signatureData} height={56} />
+          )}
           <Text style={styles.signedAt}>Signé le {formatDateTime(signedAt)}</Text>
         </>
       ) : (
-        <PrimaryButton label="Signer" onPress={onSign} style={{ height: 40, marginTop: 8 }} />
+        <>
+          <PrimaryButton label="Signer maintenant" onPress={onSign} style={{ height: 40, marginTop: 8 }} />
+          <Pressable style={styles.importBtn} onPress={onImport} disabled={importing}>
+            <Ionicons name="cloud-upload-outline" size={14} color={colors.gold} />
+            <Text style={styles.importBtnText}>{importing ? 'Import…' : 'Importer un document signé'}</Text>
+          </Pressable>
+        </>
       )}
     </View>
   );
@@ -178,4 +227,15 @@ const styles = StyleSheet.create({
   signatureLabel: { ...typography.caption, fontWeight: '700', color: colors.gold },
   signatureName: { ...typography.body, fontWeight: '700' },
   signedAt: { ...typography.caption, marginTop: 4 },
+  docPreview: { width: '100%', height: 56, borderRadius: radii.sm },
+  importBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 8, paddingVertical: 6 },
+  importBtnText: { ...typography.caption, color: colors.gold, fontWeight: '700', textAlign: 'center' },
+  pdfHint: { ...typography.caption, lineHeight: 17 },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(5,7,12,0.7)', alignItems: 'center', justifyContent: 'center', padding: 20 },
+  modalCard: { width: '100%', backgroundColor: colors.bgElevated, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.cardBorder, padding: 20, gap: 12 },
+  modalTitle: { ...typography.h3 },
+  modalHint: { ...typography.caption, lineHeight: 17 },
+  modalActions: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  modalCancel: { paddingHorizontal: 14, paddingVertical: 12 },
+  modalCancelText: { color: colors.textSecondary, fontWeight: '600' },
 });

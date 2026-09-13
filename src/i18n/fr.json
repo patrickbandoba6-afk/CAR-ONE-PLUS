@@ -82,8 +82,7 @@
   "account": {
     "title": "Compte", "profile": "Profil", "drivers": "Conducteurs", "documents": "Documents",
     "payments": "Paiements", "notifications": "Notifications", "privacy": "Confidentialité",
-    "security": "Sécurité", "help": "Aide", "terms": "Conditions", "logout": "Déconnexion",
-    "switchToOwner": "Passer en mode propriétaire", "switchToRenter": "Passer en mode locataire"
+    "security": "Sécurité", "help": "Aide", "terms": "Conditions", "logout": "Déconnexion"
   },
   "nav": {
     "home": "Accueil", "search": "Rechercher", "bookings": "Réservations", "favorites": "Favoris",

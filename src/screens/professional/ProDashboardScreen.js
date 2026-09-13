@@ -14,6 +14,7 @@ import { useAppState } from '../../context/AppStateContext';
 const ACTIONS = [
   { label: 'Ma flotte', icon: 'car-sport-outline', screen: 'Fleet' },
   { label: 'Réservations', icon: 'calendar-outline', screen: 'ProBookings' },
+  { label: 'États des lieux', icon: 'camera-outline', screen: 'Inspections' },
   { label: 'Collaborateurs', icon: 'people-outline', screen: 'Collaborators' },
   { label: 'Comptabilité', icon: 'calculator-outline', screen: 'Accounting' },
   { label: 'Contrats', icon: 'document-text-outline', screen: 'Contracts' },

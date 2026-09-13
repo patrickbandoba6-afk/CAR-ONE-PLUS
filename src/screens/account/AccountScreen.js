@@ -8,7 +8,7 @@ import { useAppState } from '../../context/AppStateContext';
 
 export default function AccountScreen({ navigation }) {
   const { t } = useTranslation();
-  const { user, resetDemoState, loyaltyPoints } = useAppState();
+  const { user, signOut, loyaltyPoints } = useAppState();
 
   // Compte "Particulier" = louer uniquement (voir AccountTypeScreen) — la
   // mise en location vit exclusivement côté Professionnel (ProDashboard,
@@ -59,8 +59,11 @@ export default function AccountScreen({ navigation }) {
         <Pressable
           style={styles.logout}
           onPress={() => {
-            resetDemoState();
-            navigation.navigate('Onboarding');
+            // signOut() invalide la session (si Supabase configuré) et
+            // réinitialise l'état local — le switch racine (AppNavigator.js)
+            // bascule automatiquement sur l'espace Auth, aucun navigate()
+            // manuel n'est nécessaire ni possible vers un espace protégé.
+            signOut();
           }}
         >
           <Ionicons name="log-out-outline" size={18} color={colors.red} />
