@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView, Image, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radii } from '../../theme/colors';
@@ -7,19 +7,33 @@ import { CATEGORIES } from '../../data/categories';
 import { CATEGORY_LABELS } from '../../data/categories';
 import { CATEGORY_REQUIREMENTS, LISTING_STEPS } from '../../data/categoryRequirements';
 import PrimaryButton from '../../components/PrimaryButton';
+import { pickImage } from '../../utils/pickImage';
+import { useAppState } from '../../context/AppStateContext';
 
 const ALL_CATEGORIES = Object.keys(CATEGORY_REQUIREMENTS);
 
 // Assistant de mise en location — personne ne publie sans avoir fourni les
 // photos et documents requis pour sa catégorie (08_SECURITE_ASSURANCE_CONFORMITE.md,
-// category_requirements dans supabase/schema.sql).
+// category_requirements dans supabase/schema.sql). Sert à la fois au
+// particulier ("Mettre en location") et au professionnel (Ma flotte) — le
+// bien publié est réellement enregistré dans myListings (auparavant l'assistant
+// ne persistait nulle part, l'annonce "disparaissait" après publication).
 export default function AddVehicleScreen({ navigation }) {
+  const { user, addListing } = useAppState();
+  const isProfessional = user.accountType === 'professional';
   const [stepIndex, setStepIndex] = useState(0);
   const [category, setCategory] = useState(null);
   const [basicInfo, setBasicInfo] = useState({ make: '', model: '', year: '' });
-  const [photoCount, setPhotoCount] = useState(0);
+  const [photos, setPhotos] = useState([]);
+  const photoCount = photos.length;
+  const addPhoto = async () => {
+    const uri = await pickImage();
+    if (uri) setPhotos((p) => [...p, uri]);
+  };
   const [docsChecked, setDocsChecked] = useState({});
   const [pricePerDay, setPricePerDay] = useState('');
+  const [includedKm, setIncludedKm] = useState('200');
+  const [extraKmPrice, setExtraKmPrice] = useState('0.30');
   const [accessMode, setAccessMode] = useState('meetup');
   const [rulesAccepted, setRulesAccepted] = useState(false);
 
@@ -40,13 +54,32 @@ export default function AddVehicleScreen({ navigation }) {
   }, [step, category, basicInfo, photoCount, docsChecked, pricePerDay, accessMode, rulesAccepted, requirements]);
 
   const goNext = () => {
-    if (stepIndex < LISTING_STEPS.length - 1) setStepIndex(stepIndex + 1);
-    else navigation.replace('OwnerDashboard', { justPublished: true });
+    if (stepIndex < LISTING_STEPS.length - 1) {
+      setStepIndex(stepIndex + 1);
+      return;
+    }
+    addListing({
+      category,
+      ownerKind: isProfessional ? 'professional' : 'individual',
+      ownerName: user.company?.name || user.fullName,
+      make: basicInfo.make,
+      model: basicInfo.model,
+      year: Number(basicInfo.year) || null,
+      photo: photos[0] || null,
+      photos,
+      priceDayMinor: Math.round(Number(pricePerDay) * 100) || 0,
+      currency: 'EUR',
+      includedKmPerDay: Number(includedKm) || null,
+      extraKmPriceMinor: Math.round(Number(extraKmPrice) * 100) || null,
+      pickupMode: accessMode,
+      status: 'pending_moderation',
+    });
+    navigation.replace(isProfessional ? 'Fleet' : 'OwnerDashboard', { justPublished: true });
   };
   const goBack = () => (stepIndex === 0 ? navigation.goBack() : setStepIndex(stepIndex - 1));
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable onPress={goBack}><Ionicons name="chevron-back" size={24} color={colors.white} /></Pressable>
         <Text style={styles.headerTitle}>Mettre en location</Text>
@@ -92,10 +125,16 @@ export default function AddVehicleScreen({ navigation }) {
           <>
             <Text style={styles.title}>Photos</Text>
             <Text style={styles.body}>Un minimum de {requirements.minPhotos} photos est requis pour cette catégorie (extérieur, intérieur, compteur, équipements).</Text>
-            <Pressable style={styles.photoZone} onPress={() => setPhotoCount((p) => Math.min(requirements.minPhotos + 4, p + 1))}>
-              <Ionicons name="camera-outline" size={28} color={colors.gold} />
-              <Text style={styles.photoZoneText}>{photoCount} / {requirements.minPhotos} photos ajoutées</Text>
-            </Pressable>
+            <View style={styles.photoGrid}>
+              {photos.map((uri) => (
+                <Image key={uri} source={{ uri }} style={styles.photoTileImg} />
+              ))}
+              <Pressable style={styles.photoZone} onPress={addPhoto}>
+                <Ionicons name="camera-outline" size={24} color={colors.gold} />
+                <Text style={styles.photoZoneText}>Ajouter</Text>
+              </Pressable>
+            </View>
+            <Text style={styles.body}>{photoCount} / {requirements.minPhotos} photos ajoutées</Text>
           </>
         )}
 
@@ -124,6 +163,19 @@ export default function AddVehicleScreen({ navigation }) {
             <Text style={styles.title}>Tarification</Text>
             <TextInput style={styles.input} placeholder="Prix par jour (€)" placeholderTextColor={colors.textMuted} value={pricePerDay} onChangeText={setPricePerDay} keyboardType="numeric" />
             <Text style={styles.body}>CAR ONE PLUS prélève une commission de 5% sur chaque location réalisée via la plateforme. Le reste vous est versé.</Text>
+
+            <Text style={styles.subTitle}>Kilométrage</Text>
+            <View style={styles.rowInputs}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.fieldLabel}>Km inclus / jour</Text>
+                <TextInput style={styles.input} placeholder="200" placeholderTextColor={colors.textMuted} value={includedKm} onChangeText={setIncludedKm} keyboardType="number-pad" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.fieldLabel}>Prix / km supp. (€)</Text>
+                <TextInput style={styles.input} placeholder="0.30" placeholderTextColor={colors.textMuted} value={extraKmPrice} onChangeText={setExtraKmPrice} keyboardType="numeric" />
+              </View>
+            </View>
+            <Text style={styles.body}>Le locataire voit ce kilométrage inclus sur l'annonce ; tout dépassement constaté à la restitution est facturé au tarif indiqué.</Text>
           </>
         )}
 
@@ -158,6 +210,7 @@ export default function AddVehicleScreen({ navigation }) {
               <SummaryRow label="Véhicule" value={`${basicInfo.make} ${basicInfo.model} (${basicInfo.year})`} />
               <SummaryRow label="Photos" value={`${photoCount} photos`} />
               <SummaryRow label="Prix" value={`${pricePerDay} €/jour`} />
+              <SummaryRow label="Kilométrage" value={`${includedKm} km/jour inclus, +${extraKmPrice} €/km`} />
               <SummaryRow label="Remise" value={accessMode} />
             </View>
             <View style={styles.noticeBox}>
@@ -192,16 +245,21 @@ const styles = StyleSheet.create({
   progressTrack: { height: 3, backgroundColor: colors.cardBorder, marginHorizontal: 20, borderRadius: 2 },
   progressFill: { height: 3, backgroundColor: colors.gold, borderRadius: 2 },
   title: { ...typography.h2, fontSize: 19 },
+  subTitle: { ...typography.h3, fontSize: 14, marginTop: 4 },
   body: { ...typography.bodyMuted, lineHeight: 20 },
   input: { backgroundColor: colors.card, borderRadius: radii.md, borderWidth: 1, borderColor: colors.cardBorder, paddingHorizontal: 16, height: 52, color: colors.white },
+  rowInputs: { flexDirection: 'row', gap: 10 },
+  fieldLabel: { ...typography.caption, marginBottom: 6 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   catCard: { width: '47%', backgroundColor: colors.card, borderRadius: radii.md, borderWidth: 1, borderColor: colors.cardBorder, padding: 14, gap: 4 },
   catCardActive: { borderColor: colors.gold },
   catCardDisabled: { opacity: 0.45 },
   catLabel: { ...typography.body, fontWeight: '700' },
   soonTag: { ...typography.caption, color: colors.amber },
-  photoZone: { height: 130, backgroundColor: colors.card, borderRadius: radii.md, borderWidth: 1, borderColor: colors.cardBorder, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  photoZoneText: { ...typography.bodyMuted },
+  photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  photoTileImg: { width: '30%', aspectRatio: 1, borderRadius: radii.md },
+  photoZone: { width: '30%', aspectRatio: 1, backgroundColor: colors.card, borderRadius: radii.md, borderWidth: 1, borderColor: colors.cardBorder, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 4 },
+  photoZoneText: { ...typography.caption },
   docRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: radii.md, borderWidth: 1, borderColor: colors.cardBorder, padding: 14 },
   docRowDone: { borderColor: colors.green },
   docLabel: { ...typography.body, flex: 1 },

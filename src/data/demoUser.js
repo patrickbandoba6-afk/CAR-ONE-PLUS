@@ -1,9 +1,32 @@
+// accountType: 'individual' | 'professional' — choisi une fois à l'inscription
+// (AccountTypeScreen), distinct de `mode` (renter/owner/professional dans
+// AppStateContext) qui est la vue active du moment. Un individuel bascule
+// librement entre renter/owner ; un professionnel a son propre espace (KYB).
 export const DEMO_USER = {
   id: 'demo-user',
+  accountType: 'individual',
   fullName: 'Patrick B.',
-  accountType: 'renter', // renter | owner | professional — évolutif après vérification (02)
+  firstName: '',
+  lastName: '',
+  dateOfBirth: null,
+  email: '',
+  phone: '',
+  avatarUri: null,
+  addressLine: '',
+  city: '',
+  postalCode: '',
   identityVerified: false,
   licenceVerified: false,
+  addressVerified: false,
+  // Renseigné uniquement pour accountType === 'professional' (KYB — voir docs/08).
+  company: {
+    name: '',
+    registrationNumber: '', // SIRET / registre du commerce
+    legalForm: '',
+    legalRepName: '',
+    legalRepRole: '',
+    verified: false,
+  },
   preferredLanguage: 'fr',
   preferredCurrency: 'EUR',
   countryCode: 'MA',

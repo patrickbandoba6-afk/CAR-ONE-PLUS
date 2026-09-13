@@ -49,6 +49,7 @@ import MyVehiclesScreen from '../screens/owner/MyVehiclesScreen';
 import AddVehicleScreen from '../screens/owner/AddVehicleScreen';
 import VehicleSettingsScreen from '../screens/owner/VehicleSettingsScreen';
 import OwnerBookingsScreen from '../screens/owner/OwnerBookingsScreen';
+import RequesterProfileScreen from '../screens/owner/RequesterProfileScreen';
 import EarningsScreen from '../screens/owner/EarningsScreen';
 import PayoutsScreen from '../screens/owner/PayoutsScreen';
 import MaintenanceScreen from '../screens/owner/MaintenanceScreen';
@@ -59,6 +60,17 @@ import StatsScreen from '../screens/owner/StatsScreen';
 import AccountScreen from '../screens/account/AccountScreen';
 import ProfileScreen from '../screens/account/ProfileScreen';
 import AccountInfoScreen from '../screens/account/AccountInfoScreen';
+import LoyaltyScreen from '../screens/account/LoyaltyScreen';
+import ContractScreen from '../screens/account/ContractScreen';
+import ContractsListScreen from '../screens/account/ContractsListScreen';
+
+// Professionnel
+import ProDashboardScreen from '../screens/professional/ProDashboardScreen';
+import FleetScreen from '../screens/professional/FleetScreen';
+import ProBookingsScreen from '../screens/professional/ProBookingsScreen';
+import CollaboratorsScreen from '../screens/professional/CollaboratorsScreen';
+import AccountingScreen from '../screens/professional/AccountingScreen';
+import ReportingScreen from '../screens/professional/ReportingScreen';
 
 import ScreenStub from '../components/ScreenStub';
 
@@ -81,9 +93,19 @@ const OWNER_TABS = [
   { name: 'AccountTab2', label: 'Mon compte', icon: 'person', component: AccountScreen },
 ];
 
+// Espace professionnel — distinct du parcours particulier (renter/owner) :
+// pas de bascule vers ces tabs sans un compte accountType==='professional'
+// vérifié (voir SideMenu.js, IdentityVerificationScreen.js).
+const PRO_TABS = [
+  { name: 'ProDashboardTab', label: 'Dashboard', icon: 'grid', component: ProDashboardScreen },
+  { name: 'ProFleetTab', label: 'Flotte', icon: 'car-sport', component: FleetScreen },
+  { name: 'ProBookingsTab', label: 'Réservations', icon: 'calendar', component: ProBookingsScreen },
+  { name: 'AccountTab3', label: 'Mon compte', icon: 'person', component: AccountScreen },
+];
+
 function MainTabs() {
   const { mode } = useAppState();
-  const tabs = mode === 'owner' ? OWNER_TABS : RENTER_TABS;
+  const tabs = mode === 'professional' ? PRO_TABS : mode === 'owner' ? OWNER_TABS : RENTER_TABS;
 
   return (
     <Tab.Navigator
@@ -102,7 +124,7 @@ function MainTabs() {
       }}
     >
       {tabs.map((t) => (
-        <Tab.Screen key={t.name} name={t.name} component={t.component} options={{ tabBarLabel: t.label }} />
+        <Tab.Screen key={t.name} name={t.name} component={t.component} initialParams={t.initialParams} options={{ tabBarLabel: t.label }} />
       ))}
     </Tab.Navigator>
   );
@@ -147,6 +169,12 @@ export default function AppNavigator() {
         <RootStack.Screen name="Invoice" component={InvoiceScreen} />
         <RootStack.Screen name="Review" component={ReviewScreen} />
 
+        <RootStack.Screen name="ProDashboard" component={ProDashboardScreen} />
+        <RootStack.Screen name="Fleet" component={FleetScreen} />
+        <RootStack.Screen name="ProBookings" component={ProBookingsScreen} />
+        <RootStack.Screen name="Collaborators" component={CollaboratorsScreen} />
+        <RootStack.Screen name="Accounting" component={AccountingScreen} />
+        <RootStack.Screen name="Reporting" component={ReportingScreen} />
         <RootStack.Screen name="AddVehicle" component={AddVehicleScreen} />
         <RootStack.Screen name="OwnerDashboard" component={OwnerDashboardScreen} />
         <RootStack.Screen name="MyVehicles" component={MyVehiclesScreen} />
@@ -157,6 +185,7 @@ export default function AppNavigator() {
         <RootStack.Screen name="Rules" component={VehicleSettingsScreen} />
         <RootStack.Screen name="AccessMode" component={VehicleSettingsScreen} />
         <RootStack.Screen name="OwnerBookings" component={OwnerBookingsScreen} />
+        <RootStack.Screen name="RequesterProfile" component={RequesterProfileScreen} />
         <RootStack.Screen name="Earnings" component={EarningsScreen} />
         <RootStack.Screen name="Payouts" component={PayoutsScreen} />
         <RootStack.Screen name="Maintenance" component={MaintenanceScreen} />
@@ -164,6 +193,9 @@ export default function AppNavigator() {
         <RootStack.Screen name="Stats" component={StatsScreen} />
 
         <RootStack.Screen name="Profile" component={ProfileScreen} />
+        <RootStack.Screen name="Loyalty" component={LoyaltyScreen} />
+        <RootStack.Screen name="Contract" component={ContractScreen} />
+        <RootStack.Screen name="Contracts" component={ContractsListScreen} />
         <RootStack.Screen name="Drivers" component={AccountInfoScreen} />
         <RootStack.Screen name="AccountDocuments" component={AccountInfoScreen} />
         <RootStack.Screen name="Payments" component={AccountInfoScreen} />

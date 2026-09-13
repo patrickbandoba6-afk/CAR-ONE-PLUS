@@ -36,7 +36,13 @@ create table if not exists profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   account_type text not null default 'renter' check (account_type in ('renter','owner','professional')),
   full_name text,
+  first_name text,
+  last_name text,
+  date_of_birth date,
   phone text,
+  address_line text,
+  city text,
+  postal_code text,
   country_code text references country_configs(country_code),
   preferred_language text not null default 'fr',
   preferred_currency text not null default 'EUR',
@@ -44,6 +50,7 @@ create table if not exists profiles (
   trust_score numeric,                     -- score interne "centre de confiance", jamais exposé brut (08)
   identity_verified boolean not null default false,
   licence_verified boolean not null default false,
+  address_verified boolean not null default false,
   deleted_at timestamptz,
   created_at timestamptz not null default now()
 );
@@ -63,8 +70,13 @@ create table if not exists organizations (
   id uuid primary key default uuid_generate_v4(),
   name text not null,
   legal_name text,
+  registration_number text,                -- SIRET (FR) ou équivalent registre du commerce selon le pays
+  legal_form text,                         -- SARL, SAS, auto-entrepreneur, etc.
+  legal_representative_name text,
+  legal_representative_role text,
   country_code text references country_configs(country_code),
   billing_email text,
+  verified_at timestamptz,                 -- KYB (Know Your Business) validé — Kbis/registre vérifié
   created_at timestamptz not null default now()
 );
 
@@ -249,7 +261,13 @@ create table if not exists contracts (
   id uuid primary key default uuid_generate_v4(),
   booking_id uuid not null references bookings(id) on delete cascade,
   pdf_url text,
-  signed_at timestamptz,
+  -- Chaque contrat exige la signature électronique des deux parties
+  -- (locataire ET propriétaire/professionnel) avant d'être considéré valide.
+  renter_signature_url text,
+  owner_signature_url text,
+  renter_signed_at timestamptz,
+  owner_signed_at timestamptz,
+  status text not null default 'pending_renter' check (status in ('pending_renter','pending_owner','completed')),
   timezone text not null default 'UTC',
   created_at timestamptz not null default now()
 );

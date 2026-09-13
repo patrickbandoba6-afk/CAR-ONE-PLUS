@@ -2,20 +2,13 @@
 // (Professionnel, Back-office, Premium) sans prétendre les avoir construits.
 // Chaque entrée devient un screen du RootStack pointant vers ScreenStub.
 export const PROFESSIONAL_SCREENS = [
-  { name: 'ProDashboard', title: 'Dashboard flotte', icon: 'speedometer-outline' },
-  { name: 'Fleet', title: 'Flotte', icon: 'car-sport-outline' },
   { name: 'FleetImport', title: 'Import flotte', icon: 'cloud-upload-outline' },
   { name: 'FleetVehicle', title: 'Véhicule (flotte)', icon: 'car-outline' },
-  { name: 'Collaborators', title: 'Collaborateurs', icon: 'people-outline' },
   { name: 'Permissions', title: 'Permissions', icon: 'key-outline' },
   { name: 'Clients', title: 'Clients', icon: 'person-outline' },
-  { name: 'Contracts', title: 'Contrats', icon: 'document-text-outline' },
-  { name: 'ProBookings', title: 'Réservations (flotte)', icon: 'calendar-outline' },
   { name: 'FleetPricing', title: 'Tarification flotte', icon: 'pricetag-outline' },
   { name: 'FleetMaintenance', title: 'Maintenance (flotte)', icon: 'construct-outline' },
   { name: 'FleetClaims', title: 'Sinistres (flotte)', icon: 'shield-outline' },
-  { name: 'Accounting', title: 'Comptabilité', icon: 'calculator-outline' },
-  { name: 'Reporting', title: 'Reporting', icon: 'bar-chart-outline' },
   { name: 'ApiIntegrations', title: 'API / Intégrations', icon: 'code-slash-outline' },
 ].map((s) => ({ ...s, phase: 'Phase 3 — Professionnels' }));
 

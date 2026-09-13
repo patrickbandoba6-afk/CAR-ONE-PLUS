@@ -1,23 +1,34 @@
-import React from 'react';
-import { View, Text, Pressable, FlatList, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Pressable, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { colors, typography, radii } from '../../theme/colors';
-import { DEMO_VEHICLES } from '../../data/vehicles';
+import { fetchOwnerVehicles } from '../../lib/api/vehicles';
 import { formatMoney } from '../../utils/format';
 import PrimaryButton from '../../components/PrimaryButton';
 
+const LISTING_STATUS_LABEL = { published: 'Publiée', pending: 'En modération', paused: 'En pause', rejected: 'Refusée' };
+
 export default function MyVehiclesScreen({ navigation }) {
   const { t } = useTranslation();
-  const vehicles = DEMO_VEHICLES.filter((v) => v.ownerKind !== 'platform_fleet');
+  const [vehicles, setVehicles] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    fetchOwnerVehicles().then((v) => { if (active) setVehicles(v); });
+    return () => { active = false; };
+  }, []);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Text style={styles.title}>{t('owner.myVehicles')}</Text>
         <Pressable onPress={() => navigation.navigate('AddVehicle')}><Ionicons name="add-circle" size={28} color={colors.gold} /></Pressable>
       </View>
+      {!vehicles ? (
+        <ActivityIndicator color={colors.gold} style={{ marginTop: 40 }} />
+      ) : (
       <FlatList
         data={vehicles}
         keyExtractor={(v) => v.id}
@@ -30,7 +41,7 @@ export default function MyVehiclesScreen({ navigation }) {
                 <Text style={styles.name}>{item.make} {item.model}</Text>
                 <Text style={styles.price}>{formatMoney(item.priceDayMinor, item.currency)}/jour</Text>
               </View>
-              <View style={styles.statusBadge}><Text style={styles.statusText}>Publiée</Text></View>
+              <View style={styles.statusBadge}><Text style={styles.statusText}>{LISTING_STATUS_LABEL[item.listingStatus] || 'Publiée'}</Text></View>
             </View>
             <View style={styles.actionsRow}>
               <QuickAction icon="images-outline" label={t('owner.photos')} onPress={() => navigation.navigate('Photos', { vehicleId: item.id })} />
@@ -41,6 +52,7 @@ export default function MyVehiclesScreen({ navigation }) {
           </View>
         )}
       />
+      )}
     </SafeAreaView>
   );
 }

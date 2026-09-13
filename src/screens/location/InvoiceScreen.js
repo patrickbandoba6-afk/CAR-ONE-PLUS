@@ -1,9 +1,9 @@
-import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radii } from '../../theme/colors';
-import { getVehicleById } from '../../data/vehicles';
+import { fetchVehicleById } from '../../lib/api/vehicles';
 import { formatMoney, computePriceBreakdown } from '../../utils/format';
 import { useAppState } from '../../context/AppStateContext';
 import PrimaryButton from '../../components/PrimaryButton';
@@ -11,12 +11,27 @@ import PrimaryButton from '../../components/PrimaryButton';
 export default function InvoiceScreen({ navigation, route }) {
   const { bookings } = useAppState();
   const booking = bookings.find((b) => b.id === route.params?.bookingId) || bookings[0];
-  const vehicle = booking ? getVehicleById(booking.vehicleId) : null;
-  if (!booking || !vehicle) return null;
+  const [vehicle, setVehicle] = useState(null);
+
+  useEffect(() => {
+    if (!booking) return;
+    let active = true;
+    fetchVehicleById(booking.vehicleId).then((v) => { if (active) setVehicle(v); });
+    return () => { active = false; };
+  }, [booking?.vehicleId]);
+
+  if (!booking) return null;
+  if (!vehicle) {
+    return (
+      <SafeAreaView style={[styles.container, { alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator color={colors.gold} />
+      </SafeAreaView>
+    );
+  }
   const breakdown = computePriceBreakdown({ dailyPriceMinor: vehicle.priceDayMinor, days: 3 });
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()}><Ionicons name="chevron-back" size={24} color={colors.white} /></Pressable>
         <Text style={styles.headerTitle}>Facture</Text>

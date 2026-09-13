@@ -1,56 +1,75 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { colors, typography, radii } from '../../theme/colors';
 import { formatMoney } from '../../utils/format';
+import { BOOKING_OPTIONS } from '../../data/bookingOptions';
 import PrimaryButton from '../../components/PrimaryButton';
 import { useAppState } from '../../context/AppStateContext';
-
-const OPTIONS = [
-  { id: 'protection', label: 'Protection renforcée', desc: 'Réduit votre franchise en cas de dommage', priceMinor: 1500 },
-  { id: 'extra_driver', label: 'Conducteur additionnel', desc: 'Ajoutez un conducteur vérifié', priceMinor: 800 },
-  { id: 'child_seat', label: 'Siège bébé', desc: 'Fourni par le loueur', priceMinor: 500 },
-  { id: 'delivery', label: 'Livraison à l\'adresse', desc: 'Le véhicule vous est livré', priceMinor: 2000 },
-];
 
 export default function OptionsScreen({ navigation, route }) {
   const { t } = useTranslation();
   const { bookingDraft, setBookingDraft } = useAppState();
   const [selected, setSelected] = useState(bookingDraft?.options || []);
+  const [deliveryAddress, setDeliveryAddress] = useState(bookingDraft?.deliveryAddress || '');
 
   const toggle = (id) => setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
+  const deliverySelected = selected.includes('delivery');
+  const canProceed = !deliverySelected || deliveryAddress.trim().length > 0;
+
   const proceed = () => {
-    setBookingDraft((prev) => ({ ...prev, options: selected, protection: selected.includes('protection') }));
+    setBookingDraft((prev) => ({
+      ...prev,
+      options: selected,
+      protection: selected.includes('protection'),
+      deliveryAddress: deliverySelected ? deliveryAddress.trim() : null,
+    }));
     navigation.navigate('Payment', { vehicleId: route.params.vehicleId });
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()}><Ionicons name="chevron-back" size={24} color={colors.white} /></Pressable>
         <Text style={styles.headerTitle}>{t('booking.options')}</Text>
         <View style={{ width: 24 }} />
       </View>
       <ScrollView contentContainerStyle={{ padding: 20, gap: 12 }}>
-        {OPTIONS.map((opt) => {
+        {BOOKING_OPTIONS.map((opt) => {
           const active = selected.includes(opt.id);
           return (
-            <Pressable key={opt.id} style={[styles.card, active && styles.cardActive]} onPress={() => toggle(opt.id)}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitle}>{opt.label}</Text>
-                <Text style={styles.cardDesc}>{opt.desc}</Text>
-                <Text style={styles.cardPrice}>+ {formatMoney(opt.priceMinor, 'EUR')}/jour</Text>
-              </View>
-              <Ionicons name={active ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={active ? colors.gold : colors.textMuted} />
-            </Pressable>
+            <View key={opt.id}>
+              <Pressable style={[styles.card, active && styles.cardActive]} onPress={() => toggle(opt.id)}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.cardTitle}>{opt.label}</Text>
+                  <Text style={styles.cardDesc}>{opt.desc}</Text>
+                  <Text style={styles.cardPrice}>+ {formatMoney(opt.priceMinor, 'EUR')}{opt.unit === 'day' ? '/jour' : ' (forfait unique)'}</Text>
+                </View>
+                <Ionicons name={active ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={active ? colors.gold : colors.textMuted} />
+              </Pressable>
+              {opt.requiresAddress && active && (
+                <View style={styles.addressBox}>
+                  <Text style={styles.addressLabel}>Adresse de livraison</Text>
+                  <TextInput
+                    style={styles.addressInput}
+                    placeholder="Numéro, rue, ville..."
+                    placeholderTextColor={colors.textMuted}
+                    value={deliveryAddress}
+                    onChangeText={setDeliveryAddress}
+                    multiline
+                  />
+                  {!deliveryAddress.trim() && <Text style={styles.addressWarning}>Renseignez l'adresse pour que le propriétaire puisse vous livrer.</Text>}
+                </View>
+              )}
+            </View>
           );
         })}
       </ScrollView>
       <View style={styles.footer}>
-        <PrimaryButton label={t('common.next')} onPress={proceed} />
+        <PrimaryButton label={t('common.next')} onPress={proceed} disabled={!canProceed} />
       </View>
     </SafeAreaView>
   );
@@ -65,5 +84,9 @@ const styles = StyleSheet.create({
   cardTitle: { ...typography.h3, fontSize: 15 },
   cardDesc: { ...typography.caption, marginTop: 2 },
   cardPrice: { color: colors.gold, fontWeight: '700', fontSize: 13, marginTop: 6 },
+  addressBox: { backgroundColor: colors.bgElevated, borderRadius: radii.md, padding: 14, marginTop: 8, gap: 8 },
+  addressLabel: { ...typography.caption, fontWeight: '700', color: colors.textSecondary },
+  addressInput: { backgroundColor: colors.card, borderRadius: radii.sm, borderWidth: 1, borderColor: colors.cardBorder, paddingHorizontal: 14, paddingVertical: 10, minHeight: 44, color: colors.white },
+  addressWarning: { ...typography.caption, color: colors.amber },
   footer: { padding: 20, borderTopWidth: 1, borderTopColor: colors.cardBorder },
 });

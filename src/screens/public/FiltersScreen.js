@@ -25,7 +25,7 @@ export default function FiltersScreen({ navigation }) {
   const reset = () => { setTransmission(null); setFuel(null); setInstantOnly(false); };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()}><Ionicons name="close" size={24} color={colors.white} /></Pressable>
         <Text style={styles.headerTitle}>{t('filters.title')}</Text>

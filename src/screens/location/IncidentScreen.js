@@ -16,7 +16,7 @@ const TIMELINE = [
 
 export default function IncidentScreen({ navigation, route }) {
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()}><Ionicons name="chevron-back" size={24} color={colors.white} /></Pressable>
         <Text style={styles.headerTitle}>Incident</Text>

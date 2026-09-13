@@ -13,8 +13,8 @@
     "login": "Log in", "signup": "Sign up", "email": "Email", "phone": "Phone",
     "password": "Password", "confirm": "Confirm", "forgotPassword": "Forgot password?",
     "choiceTitle": "You are...", "individual": "Individual", "professional": "Professional",
-    "individualDesc": "I rent vehicles and/or list my own.",
-    "professionalDesc": "I manage a fleet or rent professionally.",
+    "individualDesc": "I want to rent a vehicle.",
+    "professionalDesc": "I manage a fleet or rent professionally. I also list a vehicle, yacht, aircraft... for rent, even as an individual.",
     "continueWithEmail": "Continue with email", "noAccount": "No account yet?",
     "haveAccount": "Already have an account?"
   },
@@ -22,6 +22,23 @@
     "title": "Identity verification", "body": "To book or list a vehicle, we need to verify your identity and licence.",
     "uploadId": "ID document", "uploadLicence": "Driving licence", "selfie": "Verification selfie",
     "submit": "Submit for verification", "pending": "Verification pending", "verified": "Verified"
+  },
+  "kyc": {
+    "titleIndividual": "Let's verify your identity", "titleProfessional": "Let's verify your business",
+    "stepIdentity": "Identity", "stepAddress": "Address", "stepCompany": "Company",
+    "stepRepresentative": "Legal representative", "stepDocuments": "Documents", "stepSignature": "Signature",
+    "signatureBody": "This signature will be used to electronically validate your rental contracts, whether you are renting or listing.",
+    "firstName": "First name", "lastName": "Last name", "dob": "Date of birth", "dobPlaceholder": "DD/MM/YYYY",
+    "phone": "Phone", "addressLine": "Address", "city": "City", "postalCode": "Postal code",
+    "companyName": "Legal (company) name", "registrationNumber": "Business registration number",
+    "legalForm": "Legal form (LLC, sole trader...)",
+    "legalRepName": "Legal representative name", "legalRepRole": "Role in the company",
+    "docIdCard": "ID document", "docLicence": "Driving licence",
+    "docProofOfAddress": "Proof of address", "docKbis": "Business registration extract",
+    "docRepId": "Representative's ID document", "docInsurance": "Professional liability insurance",
+    "docTechnicalControl": "Fleet technical inspection",
+    "docsHint": "These documents stay confidential and are only used for verification and fraud prevention.",
+    "submit": "Finish verification", "later": "Later"
   },
   "home": {
     "greeting": "Where would you like to rent a vehicle?", "searchPlaceholder": "Destination, city, airport...",

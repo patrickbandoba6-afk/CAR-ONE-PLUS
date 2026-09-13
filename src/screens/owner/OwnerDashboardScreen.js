@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { colors, typography, radii, shadow } from '../../theme/colors';
-import { DEMO_VEHICLES } from '../../data/vehicles';
+import { fetchOwnerVehicles } from '../../lib/api/vehicles';
 import { formatMoney } from '../../utils/format';
 import PrimaryButton from '../../components/PrimaryButton';
 import { useAppState } from '../../context/AppStateContext';
@@ -12,7 +12,13 @@ import { useAppState } from '../../context/AppStateContext';
 export default function OwnerDashboardScreen({ navigation, route }) {
   const { t } = useTranslation();
   const { user } = useAppState();
-  const myVehicles = DEMO_VEHICLES.filter((v) => v.ownerKind !== 'platform_fleet').slice(0, 3);
+  const [myVehicles, setMyVehicles] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+    fetchOwnerVehicles().then((v) => { if (active) setMyVehicles(v.slice(0, 3)); });
+    return () => { active = false; };
+  }, []);
 
   const actions = [
     { label: t('owner.myVehicles'), icon: 'car-sport-outline', screen: 'MyVehicles' },
@@ -23,10 +29,11 @@ export default function OwnerDashboardScreen({ navigation, route }) {
     { label: t('owner.claims'), icon: 'shield-outline', screen: 'Claims' },
     { label: t('owner.stats'), icon: 'stats-chart-outline', screen: 'Stats' },
     { label: t('owner.documents'), icon: 'folder-outline', screen: 'Documents' },
+    { label: 'Contrats', icon: 'document-lock-outline', screen: 'Contracts' },
   ];
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={{ padding: 20, gap: 20 }}>
         <View>
           <Text style={styles.greeting}>{t('owner.dashboard')}</Text>

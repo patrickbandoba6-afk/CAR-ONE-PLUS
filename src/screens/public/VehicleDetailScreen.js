@@ -1,10 +1,10 @@
-import React from 'react';
-import { View, Text, Image, Pressable, ScrollView, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Image, Pressable, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { colors, typography, radii, shadow } from '../../theme/colors';
-import { getVehicleById } from '../../data/vehicles';
+import { fetchVehicleById } from '../../lib/api/vehicles';
 import { CATEGORY_LABELS } from '../../data/categories';
 import { formatMoney } from '../../utils/format';
 import PrimaryButton from '../../components/PrimaryButton';
@@ -14,20 +14,33 @@ const AMENITIES = ['Climatisation', 'GPS', 'Bluetooth', 'Siège bébé disponibl
 
 export default function VehicleDetailScreen({ navigation, route }) {
   const { t } = useTranslation();
-  const vehicle = getVehicleById(route.params.vehicleId);
+  const [vehicle, setVehicle] = useState(null);
   const { favorites, toggleFavorite, setBookingDraft } = useAppState();
-  if (!vehicle) return null;
+
+  useEffect(() => {
+    let active = true;
+    fetchVehicleById(route.params.vehicleId).then((v) => { if (active) setVehicle(v); });
+    return () => { active = false; };
+  }, [route.params.vehicleId]);
+
+  if (!vehicle) {
+    return (
+      <SafeAreaView style={[styles.container, { alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator color={colors.gold} />
+      </SafeAreaView>
+    );
+  }
   const isFav = favorites.includes(vehicle.id);
 
   const startBooking = () => {
-    setBookingDraft({ vehicleId: vehicle.id, days: 1, protection: false, options: [] });
+    setBookingDraft({ vehicleId: vehicle.id, vehicle, days: 1, protection: false, options: [] });
     navigation.navigate('PriceDetails', { vehicleId: vehicle.id });
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <Pressable onPress={() => navigation.navigate('Gallery', { vehicleId: vehicle.id })}>
+        <Pressable onPress={() => navigation.navigate('Gallery', { vehicleId: vehicle.id, vehicle })}>
           {vehicle.photo ? (
             <Image source={{ uri: vehicle.photo }} style={styles.hero} />
           ) : (
@@ -78,6 +91,20 @@ export default function VehicleDetailScreen({ navigation, route }) {
               <PickupOption icon="business-outline" label={t('vehicle.pickupAgency')} active={vehicle.fleet} />
             </View>
           </Section>
+
+          {vehicle.includedKmPerDay != null && (
+            <Section title={t('vehicle.included_km')}>
+              <View style={styles.kmCard}>
+                <Ionicons name="speedometer-outline" size={20} color={colors.gold} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.kmValue}>{vehicle.includedKmPerDay} km {t('vehicle.perDay')}</Text>
+                  {vehicle.extraKmPriceMinor != null && (
+                    <Text style={styles.kmSub}>Au-delà : {formatMoney(vehicle.extraKmPriceMinor, vehicle.currency)} / km supplémentaire</Text>
+                  )}
+                </View>
+              </View>
+            </Section>
+          )}
 
           <Section title={t('vehicle.fuelPolicy')}>
             <Text style={styles.bodyText}>Retour avec le même niveau de carburant/batterie qu'au départ.</Text>
@@ -144,6 +171,9 @@ const styles = StyleSheet.create({
   pickupOption: { flex: 1, alignItems: 'center', gap: 6, backgroundColor: colors.card, borderRadius: radii.md, borderWidth: 1, borderColor: colors.gold, padding: 12 },
   pickupOptionInactive: { borderColor: colors.cardBorder, opacity: 0.5 },
   pickupLabel: { ...typography.caption, color: colors.white, textAlign: 'center' },
+  kmCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: radii.md, borderWidth: 1, borderColor: colors.cardBorder, padding: 14 },
+  kmValue: { ...typography.body, fontWeight: '700' },
+  kmSub: { ...typography.caption, marginTop: 2 },
   bodyText: { ...typography.bodyMuted, lineHeight: 20 },
   footer: { flexDirection: 'row', alignItems: 'center', padding: 20, borderTopWidth: 1, borderTopColor: colors.cardBorder, backgroundColor: colors.bg },
   footerPrice: { color: colors.white, fontWeight: '800', fontSize: 20 },

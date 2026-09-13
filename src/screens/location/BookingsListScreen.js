@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { colors, typography, radii } from '../../theme/colors';
-import { getVehicleById } from '../../data/vehicles';
+import { fetchVehiclesByIds } from '../../lib/api/vehicles';
 import { formatMoney, formatDate } from '../../utils/format';
 import { useAppState } from '../../context/AppStateContext';
 
@@ -14,9 +14,16 @@ const STATUS_COLOR = { pending_approval: colors.amber, confirmed: colors.green, 
 export default function BookingsListScreen({ navigation }) {
   const { t } = useTranslation();
   const { bookings } = useAppState();
+  const [vehiclesById, setVehiclesById] = useState({});
+
+  useEffect(() => {
+    let active = true;
+    fetchVehiclesByIds(bookings.map((b) => b.vehicleId)).then((map) => { if (active) setVehiclesById(map); });
+    return () => { active = false; };
+  }, [bookings]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <Text style={styles.title}>{t('nav.bookings')}</Text>
       <FlatList
         data={bookings}
@@ -24,7 +31,7 @@ export default function BookingsListScreen({ navigation }) {
         contentContainerStyle={{ padding: 20, gap: 12 }}
         ListEmptyComponent={<Text style={styles.empty}>Aucune réservation pour le moment.</Text>}
         renderItem={({ item }) => {
-          const vehicle = getVehicleById(item.vehicleId);
+          const vehicle = vehiclesById[item.vehicleId];
           if (!vehicle) return null;
           return (
             <Pressable style={styles.card} onPress={() => navigation.navigate('BookingDetail', { bookingId: item.id })}>

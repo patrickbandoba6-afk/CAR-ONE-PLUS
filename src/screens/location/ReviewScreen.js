@@ -12,7 +12,7 @@ export default function ReviewScreen({ navigation }) {
   const [comment, setComment] = useState('');
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()}><Ionicons name="close" size={24} color={colors.white} /></Pressable>
         <Text style={styles.headerTitle}>{t('booking.review')}</Text>

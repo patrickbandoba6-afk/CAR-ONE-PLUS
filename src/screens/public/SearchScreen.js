@@ -7,18 +7,39 @@ import { colors, typography, radii } from '../../theme/colors';
 import PrimaryButton from '../../components/PrimaryButton';
 import { useAppState } from '../../context/AppStateContext';
 
+const DATE_PRESETS = [
+  { label: "Aujourd'hui, 09:00", offsetDays: 0 },
+  { label: 'Demain, 09:00', offsetDays: 1 },
+  { label: 'Après-demain, 09:00', offsetDays: 2 },
+  { label: 'Dans une semaine, 09:00', offsetDays: 7 },
+];
+
+function presetToDate(offsetDays) {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  d.setHours(9, 0, 0, 0);
+  return d.toISOString();
+}
+
 export default function SearchScreen({ navigation }) {
   const { t } = useTranslation();
   const { searchFilters, setSearchFilters } = useAppState();
   const [query, setQuery] = useState(searchFilters.query);
+  const [startIdx, setStartIdx] = useState(0);
+  const [endIdx, setEndIdx] = useState(1);
 
   const runSearch = () => {
-    setSearchFilters((prev) => ({ ...prev, query }));
+    setSearchFilters((prev) => ({
+      ...prev,
+      query,
+      startAt: presetToDate(DATE_PRESETS[startIdx].offsetDays),
+      endAt: presetToDate(DATE_PRESETS[endIdx].offsetDays),
+    }));
     navigation.navigate('Results', {});
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()}><Ionicons name="chevron-back" size={24} color={colors.white} /></Pressable>
         <Text style={styles.headerTitle}>{t('search.title')}</Text>
@@ -37,13 +58,13 @@ export default function SearchScreen({ navigation }) {
           />
         </View>
         <View style={styles.dateRow}>
-          <Pressable style={[styles.dateBox, { marginRight: 8 }]}>
+          <Pressable style={[styles.dateBox, { marginRight: 8 }]} onPress={() => setStartIdx((i) => (i + 1) % DATE_PRESETS.length)}>
             <Text style={styles.dateLabel}>{t('search.dateStart')}</Text>
-            <Text style={styles.dateValue}>Aujourd'hui, 09:00</Text>
+            <Text style={styles.dateValue}>{DATE_PRESETS[startIdx].label}</Text>
           </Pressable>
-          <Pressable style={styles.dateBox}>
+          <Pressable style={styles.dateBox} onPress={() => setEndIdx((i) => (i + 1) % DATE_PRESETS.length)}>
             <Text style={styles.dateLabel}>{t('search.dateEnd')}</Text>
-            <Text style={styles.dateValue}>Demain, 09:00</Text>
+            <Text style={styles.dateValue}>{DATE_PRESETS[endIdx].label}</Text>
           </Pressable>
         </View>
         <Pressable style={styles.filtersLink} onPress={() => navigation.navigate('Filters')}>

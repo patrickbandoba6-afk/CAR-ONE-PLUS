@@ -1,19 +1,19 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, Linking, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radii } from '../../theme/colors';
 
-const OPTIONS = [
-  { icon: 'call-outline', label: 'Appeler l\'assistance CAR ONE PLUS', desc: 'Disponible 24/7' },
-  { icon: 'chatbubbles-outline', label: 'Contacter le loueur', desc: 'Réponse habituelle sous quelques minutes' },
-  { icon: 'construct-outline', label: 'Panne / dépannage', desc: 'Déclenchez une intervention' },
-  { icon: 'alert-circle-outline', label: 'Déclarer un incident', desc: 'Accident, vol, dommage' },
-];
-
 export default function AssistanceScreen({ navigation, route }) {
+  const OPTIONS = [
+    { icon: 'call-outline', label: 'Appeler l\'assistance CAR ONE PLUS', desc: 'Disponible 24/7', action: () => Linking.openURL('mailto:support@caroneplus.com?subject=Assistance%20urgente') },
+    { icon: 'chatbubbles-outline', label: 'Contacter le loueur', desc: 'Réponse habituelle sous quelques minutes', action: () => Linking.openURL('mailto:support@caroneplus.com?subject=Message%20au%20loueur') },
+    { icon: 'construct-outline', label: 'Panne / dépannage', desc: 'Déclenchez une intervention', action: () => navigation.navigate('Incident', route.params) },
+    { icon: 'alert-circle-outline', label: 'Déclarer un incident', desc: 'Accident, vol, dommage', action: () => navigation.navigate('Incident', route.params) },
+  ];
+
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()}><Ionicons name="chevron-back" size={24} color={colors.white} /></Pressable>
         <Text style={styles.headerTitle}>Assistance</Text>
@@ -24,7 +24,7 @@ export default function AssistanceScreen({ navigation, route }) {
           <Pressable
             key={o.label}
             style={styles.row}
-            onPress={() => o.label.includes('incident') || o.icon === 'alert-circle-outline' ? navigation.navigate('Incident', route.params) : null}
+            onPress={o.action}
           >
             <View style={styles.iconWrap}><Ionicons name={o.icon} size={20} color={colors.gold} /></View>
             <View style={{ flex: 1 }}>

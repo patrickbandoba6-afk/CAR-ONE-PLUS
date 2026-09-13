@@ -9,7 +9,7 @@ import PrimaryButton from '../../components/PrimaryButton';
 export default function ActiveRentalScreen({ navigation, route }) {
   const { t } = useTranslation();
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{t('booking.inProgress')}</Text>
         <View style={styles.liveBadge}><View style={styles.liveDot} /><Text style={styles.liveText}>En cours</Text></View>

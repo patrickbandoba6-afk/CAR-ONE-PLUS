@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Pressable, Image, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -8,12 +8,17 @@ import { useAppState } from '../../context/AppStateContext';
 
 export default function AccountScreen({ navigation }) {
   const { t } = useTranslation();
-  const { user, mode, setMode } = useAppState();
+  const { user, resetDemoState, loyaltyPoints } = useAppState();
 
+  // Compte "Particulier" = louer uniquement (voir AccountTypeScreen) — la
+  // mise en location vit exclusivement côté Professionnel (ProDashboard,
+  // Fleet, ProBookings...), donc aucun raccourci propriétaire ici.
   const rows = [
     { label: t('account.profile'), icon: 'person-outline', screen: 'Profile' },
+    { label: 'Fidélité', icon: 'trophy-outline', screen: 'Loyalty' },
     { label: t('account.drivers'), icon: 'people-outline', screen: 'Drivers' },
     { label: t('account.documents'), icon: 'folder-outline', screen: 'AccountDocuments' },
+    { label: 'Contrats', icon: 'document-lock-outline', screen: 'Contracts' },
     { label: t('account.payments'), icon: 'card-outline', screen: 'Payments' },
     { label: t('account.notifications'), icon: 'notifications-outline', screen: 'Notifications' },
     { label: t('account.privacy'), icon: 'lock-closed-outline', screen: 'Privacy' },
@@ -23,26 +28,22 @@ export default function AccountScreen({ navigation }) {
   ];
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
-        <View style={styles.profileHeader}>
-          <View style={styles.avatar}><Ionicons name="person" size={30} color={colors.gold} /></View>
-          <View>
+        <Pressable style={styles.profileHeader} onPress={() => navigation.navigate('Profile')}>
+          {user.avatarUri ? (
+            <Image source={{ uri: user.avatarUri }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, styles.avatarEmpty]}><Ionicons name="person" size={30} color={colors.gold} /></View>
+          )}
+          <View style={{ flex: 1 }}>
             <Text style={styles.name}>{user.fullName}</Text>
             <Text style={styles.verified}>{user.identityVerified ? 'Identité vérifiée' : 'Identité non vérifiée'}</Text>
           </View>
-        </View>
-
-        <Pressable
-          style={styles.switchModeCard}
-          onPress={() => {
-            const next = mode === 'renter' ? 'owner' : 'renter';
-            setMode(next);
-            navigation.navigate(next === 'owner' ? 'OwnerTab' : 'HomeTab');
-          }}
-        >
-          <Ionicons name="swap-horizontal-outline" size={20} color={colors.gold} />
-          <Text style={styles.switchModeText}>{mode === 'renter' ? t('account.switchToOwner') : t('account.switchToRenter')}</Text>
+          <Pressable style={styles.pointsChip} onPress={() => navigation.navigate('Loyalty')}>
+            <Ionicons name="trophy-outline" size={13} color={colors.gold} />
+            <Text style={styles.pointsChipText}>{loyaltyPoints} pts</Text>
+          </Pressable>
         </Pressable>
 
         <View style={styles.list}>
@@ -55,7 +56,13 @@ export default function AccountScreen({ navigation }) {
           ))}
         </View>
 
-        <Pressable style={styles.logout}>
+        <Pressable
+          style={styles.logout}
+          onPress={() => {
+            resetDemoState();
+            navigation.navigate('Onboarding');
+          }}
+        >
           <Ionicons name="log-out-outline" size={18} color={colors.red} />
           <Text style={styles.logoutText}>{t('account.logout')}</Text>
         </Pressable>
@@ -67,11 +74,12 @@ export default function AccountScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   profileHeader: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  avatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 56, height: 56, borderRadius: 28 },
+  avatarEmpty: { backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.cardBorder },
   name: { ...typography.h2 },
   verified: { ...typography.caption, marginTop: 2 },
-  switchModeCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card, borderRadius: radii.md, borderWidth: 1, borderColor: colors.gold, padding: 14 },
-  switchModeText: { ...typography.body, fontWeight: '700', color: colors.gold },
+  pointsChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.card, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.gold, paddingHorizontal: 10, paddingVertical: 6 },
+  pointsChipText: { ...typography.caption, color: colors.gold, fontWeight: '700' },
   list: { backgroundColor: colors.card, borderRadius: radii.md, borderWidth: 1, borderColor: colors.cardBorder, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.cardBorder },
   rowLabel: { ...typography.body, flex: 1 },

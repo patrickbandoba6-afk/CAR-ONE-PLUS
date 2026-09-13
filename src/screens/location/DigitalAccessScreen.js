@@ -1,19 +1,27 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radii } from '../../theme/colors';
-import { getVehicleById } from '../../data/vehicles';
+import { fetchVehicleById } from '../../lib/api/vehicles';
 import PrimaryButton from '../../components/PrimaryButton';
 
 // Clé digitale — Phase 2 de la roadmap (nécessite un boîtier télématique compatible
 // sur le véhicule, voir TelematicsDevice dans supabase/schema.sql).
 export default function DigitalAccessScreen({ navigation, route }) {
-  const vehicle = route.params?.vehicleId ? getVehicleById(route.params.vehicleId) : null;
+  const [vehicle, setVehicle] = useState(null);
+
+  useEffect(() => {
+    if (!route.params?.vehicleId) return;
+    let active = true;
+    fetchVehicleById(route.params.vehicleId).then((v) => { if (active) setVehicle(v); });
+    return () => { active = false; };
+  }, [route.params?.vehicleId]);
+
   const available = vehicle?.digitalKey;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()}><Ionicons name="chevron-back" size={24} color={colors.white} /></Pressable>
         <Text style={styles.headerTitle}>Accès digital</Text>

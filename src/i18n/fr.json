@@ -13,8 +13,8 @@
     "login": "Connexion", "signup": "Inscription", "email": "E-mail", "phone": "Téléphone",
     "password": "Mot de passe", "confirm": "Confirmer", "forgotPassword": "Mot de passe oublié ?",
     "choiceTitle": "Vous êtes...", "individual": "Particulier", "professional": "Professionnel",
-    "individualDesc": "Je loue des véhicules et/ou je mets les miens en location.",
-    "professionalDesc": "Je gère une flotte ou je loue à titre professionnel.",
+    "individualDesc": "Je veux louer un véhicule.",
+    "professionalDesc": "Je gère une flotte ou je loue à titre professionnel. Je mets aussi un bien en location (véhicule, yacht, avion...), même à titre individuel.",
     "continueWithEmail": "Continuer avec e-mail", "noAccount": "Pas encore de compte ?",
     "haveAccount": "Déjà un compte ?"
   },
@@ -22,6 +22,23 @@
     "title": "Vérification d'identité", "body": "Pour réserver ou mettre un bien en location, nous devons vérifier votre identité et votre permis.",
     "uploadId": "Pièce d'identité", "uploadLicence": "Permis de conduire", "selfie": "Selfie de vérification",
     "submit": "Envoyer pour vérification", "pending": "En cours de vérification", "verified": "Vérifié"
+  },
+  "kyc": {
+    "titleIndividual": "Vérifions votre identité", "titleProfessional": "Vérifions votre entreprise",
+    "stepIdentity": "Identité", "stepAddress": "Adresse", "stepCompany": "Entreprise",
+    "stepRepresentative": "Représentant légal", "stepDocuments": "Documents", "stepSignature": "Signature",
+    "signatureBody": "Cette signature sera utilisée pour valider électroniquement vos contrats de location, que vous soyez locataire ou propriétaire.",
+    "firstName": "Prénom", "lastName": "Nom", "dob": "Date de naissance", "dobPlaceholder": "JJ/MM/AAAA",
+    "phone": "Téléphone", "addressLine": "Adresse", "city": "Ville", "postalCode": "Code postal",
+    "companyName": "Raison sociale", "registrationNumber": "SIRET / n° de registre du commerce",
+    "legalForm": "Forme juridique (SARL, SAS, auto-entrepreneur...)",
+    "legalRepName": "Nom du représentant légal", "legalRepRole": "Fonction dans l'entreprise",
+    "docIdCard": "Pièce d'identité", "docLicence": "Permis de conduire",
+    "docProofOfAddress": "Justificatif de domicile", "docKbis": "Extrait Kbis",
+    "docRepId": "Pièce d'identité du représentant", "docInsurance": "Attestation RC Pro",
+    "docTechnicalControl": "Contrôle technique (flotte)",
+    "docsHint": "Ces documents restent confidentiels et servent uniquement à la vérification et à la lutte anti-fraude.",
+    "submit": "Terminer la vérification", "later": "Plus tard"
   },
   "home": {
     "greeting": "Où souhaitez-vous louer un véhicule ?", "searchPlaceholder": "Destination, ville, aéroport...",

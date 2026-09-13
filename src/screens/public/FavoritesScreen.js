@@ -1,19 +1,27 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { colors, typography } from '../../theme/colors';
-import { DEMO_VEHICLES } from '../../data/vehicles';
+import { fetchVehicles } from '../../lib/api/vehicles';
 import VehicleCard from '../../components/VehicleCard';
 import { useAppState } from '../../context/AppStateContext';
 
 export default function FavoritesScreen({ navigation }) {
   const { t } = useTranslation();
   const { favorites } = useAppState();
-  const vehicles = DEMO_VEHICLES.filter((v) => favorites.includes(v.id));
+  const [all, setAll] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+    fetchVehicles({}).then((v) => { if (active) setAll(v); });
+    return () => { active = false; };
+  }, []);
+
+  const vehicles = all.filter((v) => favorites.includes(v.id));
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <Text style={styles.title}>{t('nav.favorites')}</Text>
       <FlatList
         data={vehicles}

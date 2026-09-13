@@ -13,7 +13,7 @@ export default function AddDamageScreen({ navigation }) {
   const [photos, setPhotos] = useState(0);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()}><Ionicons name="close" size={24} color={colors.white} /></Pressable>
         <Text style={styles.headerTitle}>Ajouter un dommage</Text>

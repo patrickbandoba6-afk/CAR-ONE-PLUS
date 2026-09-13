@@ -3,10 +3,10 @@ import { View, Text, Image, Pressable, FlatList, StyleSheet, useWindowDimensions
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography } from '../../theme/colors';
-import { getVehicleById } from '../../data/vehicles';
+import { getVehicleById as getDemoVehicleById } from '../../data/vehicles';
 
 export default function GalleryScreen({ navigation, route }) {
-  const vehicle = getVehicleById(route.params.vehicleId);
+  const vehicle = route.params.vehicle || getDemoVehicleById(route.params.vehicleId);
   const { width } = useWindowDimensions();
   const photos = vehicle?.photo ? [vehicle.photo] : [];
 

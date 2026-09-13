@@ -1,21 +1,39 @@
-import React, { useState } from 'react';
-import { View, Text, Pressable, FlatList, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Pressable, Image, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { colors, typography, radii } from '../../theme/colors';
-import { searchVehicles } from '../../data/vehicles';
+import { fetchVehicles } from '../../lib/api/vehicles';
 import VehicleCard from '../../components/VehicleCard';
 import { useAppState } from '../../context/AppStateContext';
+import { formatMoney } from '../../utils/format';
+
+const DEFAULT_REGION = { latitude: 33.5731, longitude: -7.5898, latitudeDelta: 6, longitudeDelta: 6 };
 
 export default function ResultsScreen({ navigation, route }) {
   const { t } = useTranslation();
-  const { searchFilters } = useAppState();
+  const { searchFilters, setBookingDraft } = useAppState();
   const [view, setView] = useState('list');
-  const results = searchVehicles(searchFilters);
+  const [results, setResults] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+    fetchVehicles(searchFilters).then((vehicles) => { if (active) setResults(vehicles); });
+    return () => { active = false; };
+  }, [searchFilters]);
+
+  const located = results.filter((v) => v.lat != null && v.lng != null);
+
+  // Tap sur un repère = réservation directe, comme sur MapScreen.js.
+  const reserve = (vehicle) => {
+    setBookingDraft({ vehicleId: vehicle.id, vehicle, days: 1, protection: false, options: [] });
+    navigation.navigate('PriceDetails', { vehicleId: vehicle.id });
+  };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()}><Ionicons name="chevron-back" size={24} color={colors.white} /></Pressable>
         <Text style={styles.headerTitle}>{route.params?.categoryLabel || t('search.title')}</Text>
@@ -29,12 +47,22 @@ export default function ResultsScreen({ navigation, route }) {
         </Pressable>
       </View>
       {view === 'map' ? (
-        <Pressable style={{ flex: 1 }} onPress={() => navigation.navigate('Map', { vehicles: results })}>
-          <View style={styles.mapPreview}>
-            <Ionicons name="map" size={48} color={colors.gold} />
-            <Text style={styles.mapPreviewText}>Voir {results.length} véhicules sur la carte</Text>
-          </View>
-        </Pressable>
+        <MapView
+          style={{ flex: 1 }}
+          provider={PROVIDER_DEFAULT}
+          initialRegion={DEFAULT_REGION}
+          showsUserLocation
+          showsMyLocationButton
+        >
+          {located.map((v) => (
+            <Marker key={v.id} coordinate={{ latitude: v.lat, longitude: v.lng }} onPress={() => reserve(v)}>
+              <View style={styles.pin}>
+                {v.photo ? <Image source={{ uri: v.photo }} style={styles.pinPhoto} /> : null}
+                <Text style={styles.pinText}>{formatMoney(v.priceDayMinor, v.currency)}</Text>
+              </View>
+            </Marker>
+          ))}
+        </MapView>
       ) : (
         <FlatList
           data={results}
@@ -60,7 +88,8 @@ const styles = StyleSheet.create({
   resultCount: { ...typography.bodyMuted },
   mapToggle: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   mapToggleText: { color: colors.gold, fontWeight: '700', fontSize: 13 },
-  mapPreview: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: colors.bgElevated, margin: 20, borderRadius: radii.lg },
-  mapPreviewText: { ...typography.bodyMuted },
+  pin: { alignItems: 'center', gap: 4 },
+  pinPhoto: { width: 34, height: 34, borderRadius: 17, borderWidth: 2, borderColor: colors.gold },
+  pinText: { backgroundColor: colors.gold, color: colors.bg, fontWeight: '800', fontSize: 10, borderRadius: radii.pill, paddingHorizontal: 7, paddingVertical: 3, borderWidth: 2, borderColor: colors.bg },
   empty: { ...typography.bodyMuted, textAlign: 'center', marginTop: 60 },
 });

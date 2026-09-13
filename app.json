@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#0A0D14",
+    "icon": "./src/assets/logo-car-one-plus.png",
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -20,6 +21,10 @@
     },
     "android": {
       "package": "com.caroneplus.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/logo-car-one-plus.png",
+        "backgroundColor": "#0A0D14"
+      },
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "CAMERA",
@@ -27,10 +32,21 @@
       ]
     },
     "web": {
-      "bundler": "metro"
+      "bundler": "metro",
+      "favicon": "./src/assets/logo-car-one-plus.png"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "expo-sharing",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./src/assets/logo-car-one-plus.png",
+          "imageWidth": 260,
+          "resizeMode": "contain",
+          "backgroundColor": "#0A0D14"
+        }
+      ]
     ]
   }
 }
