@@ -118,6 +118,12 @@ car-one-plus-app/
 └── supabase/schema.sql
 ```
 
+## Sauvegarde automatique
+
+Toute modification faite sur ce projet via l'assistant est automatiquement
+committée et poussée sur ce dépôt GitHub (`origin/main`) — aucune action
+manuelle n'est nécessaire pour que les nouveautés soient enregistrées ici.
+
 ## Prochaines étapes suggérées
 
 1. Choisir le PSP (paiement) et le fournisseur cartographique
